@@ -1,0 +1,11 @@
+# Ambiente virtual
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Segredos
+.env
+
+# Artefatos de execucao local
+streamlit_smoke.log
