@@ -73,6 +73,18 @@ InfluxDB: `weather_service` degrada para "sem chuva" e `influx_persister` vira n
 quando o pacote/banco não está disponível. Copie `.env.example` para `.env` e preencha
 as credenciais para ativar chuva real e persistência.
 
+## Evoluções planejadas
+
+- **Ingestão de documentos (Docling):** etapa **opcional** para ler PDF/DOCX de
+  especificações e balanços do Processo Bayer e extrair parâmetros (teores de sílica,
+  soda, capacidade, vazões) para calibrar o Gêmeo Digital — em vez de valores de
+  engenharia. Não integra o núcleo atual; é um módulo de ingestão a montante do
+  simulador, com fallback aos valores atuais.
+- **RAG no agente:** converter manuais de planta e normas de segurança (ex.: API 2350)
+  em base consultável, para explicar alertas e gerar relatórios ao operador. As regras
+  físicas de decisão continuam determinísticas + HITL (o LLM não decide sobre válvulas).
+- **Controle Preditivo (MPC):** potencial substituição/adição do Fuzzy adaptativo.
+
 ## Testes
 
 - `tests/test_fuzzy.py` — pertinência, saturação, monotonicidade da abertura.
