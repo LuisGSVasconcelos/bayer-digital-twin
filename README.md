@@ -85,6 +85,12 @@ as credenciais para ativar chuva real e persistência.
   físicas de decisão continuam determinísticas + HITL (o LLM não decide sobre válvulas).
 - **Controle Preditivo (MPC):** potencial substituição/adição do Fuzzy adaptativo.
 
+## Documentação
+
+- [MANUAL_EXECUCAO.md](MANUAL_EXECUCAO.md) — manual de execução (instalação, uso, solução de problemas).
+- [docs/SISTEMA_IMPLEMENTADO.md](docs/SISTEMA_IMPLEMENTADO.md) — visão completa do sistema implementado
+  (componentes, comparação conceitual × real e métricas de validação).
+
 ## Testes
 
 - `tests/test_fuzzy.py` — pertinência, saturação, monotonicidade da abertura.

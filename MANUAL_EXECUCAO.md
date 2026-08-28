@@ -27,8 +27,14 @@ transbordamentos, especialmente sob chuva intensa. Ele integra:
 ![Arquitetura do Digital Twin](assets/arquitetura_processo_bayer.png)
 
 **Fluxo do agente:** `coleta → analise → calcular_controle → [crítico] aguardar_operador → executar_controle`.
-Quando o nível (filtrado por EMA) supera o limite crítico sob chuva, o fluxo **interrompe**
-aguardando aprovação do operador antes de agir fisicamente nas válvulas.
+Quando o nível (filtrado por EMA) supera o limite crítico sob chuva, o fluxo **interrompe** aguardando aprovação do operador antes de agir fisicamente nas válvulas.
+
+### Visão de sistema (versão implementada)
+
+![Sistema implementado](assets/arquitetura_sistema_implementado.png)
+
+A descrição completa dos componentes, a comparação com o modelo conceitual e as métricas de
+validação estão em **[docs/SISTEMA_IMPLEMENTADO.md](docs/SISTEMA_IMPLEMENTADO.md)**.
 
 ---
 
@@ -178,10 +184,14 @@ projeto_bayer/
 ├── dashboard.py                 # Dashboard Streamlit + Plotly
 ├── test_adaptive_controller.py  # Benchmark reproduzível
 ├── tests/                       # Suíte pytest (23 testes)
+├── docs/
+│   └── SISTEMA_IMPLEMENTADO.md  # Visão completa do sistema (componentes, métricas)
 ├── scripts/
-│   └── diagrama_arquitetura.py  # Gera o diagrama PNG (dark-mode)
+│   ├── diagrama_arquitetura.py  # Gera o diagrama do fluxo (PNG dark-mode)
+│   └── diagrama_sistema_implementado.py  # Gera o diagrama em subgrafos (PNG dark-mode)
 ├── assets/
-│   └── arquitetura_processo_bayer.png
+│   ├── arquitetura_processo_bayer.png
+│   └── arquitetura_sistema_implementado.png
 ├── requirements.txt
 ├── .env.example                 # Modelo de configuração de serviços
 └── MANUAL_EXECUCAO.md           # Este documento
