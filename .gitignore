@@ -9,3 +9,8 @@ __pycache__/
 
 # Artefatos de execucao local
 streamlit_smoke.log
+.qa/
+
+# Travas temporarias do Office
+~$*
+*.~lock.*
