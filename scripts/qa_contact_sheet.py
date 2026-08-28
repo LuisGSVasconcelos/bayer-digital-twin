@@ -1,9 +1,10 @@
 """Monta uma folha de contato (grid) com as miniaturas dos slides."""
 import os
+import sys
 from PIL import Image, ImageDraw, ImageFont
 
-THUMB = ".qa/thumbs"
-OUT = ".qa/contato_deck.png"
+THUMB = sys.argv[1] if len(sys.argv) > 1 else ".qa/thumbs"
+OUT = sys.argv[2] if len(sys.argv) > 2 else ".qa/contato_deck.png"
 COLS = 3
 label_h = 26
 bg_color = (15, 18, 25)

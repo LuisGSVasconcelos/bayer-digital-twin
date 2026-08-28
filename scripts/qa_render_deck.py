@@ -1,9 +1,10 @@
 """QA do deck: renderiza miniaturas por slide e detecta overflow de texto."""
 import os
+import sys
 import pymupdf
 
-SRC = ".qa/Apresentacao_Projeto_Bayer.pdf"
-OUT = ".qa/thumbs"
+SRC = sys.argv[1] if len(sys.argv) > 1 else ".qa/Apresentacao_Projeto_Bayer.pdf"
+OUT = sys.argv[2] if len(sys.argv) > 2 else ".qa/thumbs"
 os.makedirs(OUT, exist_ok=True)
 
 doc = pymupdf.open(SRC)
