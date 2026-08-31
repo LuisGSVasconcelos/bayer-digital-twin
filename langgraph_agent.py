@@ -61,8 +61,22 @@ class BayerState(TypedDict):
     tc_saida_decantadores: float
 
 
+FORCA_CLIMA: str | None = None  # demo offline: "Forte" | "Moderada" | "Nenhuma" | None
+
+
 def obter_chuva():
-    """Wraper de leitura do clima. Separado para permitir mock em testes."""
+    """Wraper de leitura do clima. Separado para permitir mock em testes.
+
+    Se FORCA_CLIMA estiver definido, ignora a API e usa um cenário simulado
+    (útil para demonstração offline, sem chave OpenWeather).
+    """
+    if FORCA_CLIMA in ("Forte", "Moderada", "Nenhuma"):
+        mapa = {
+            "Forte": (12.0, "chuva forte (simulada)", "ALERTA: chuva forte simulada"),
+            "Moderada": (0.5, "chuva moderada (simulada)", "chuva moderada simulada"),
+            "Nenhuma": (0.0, "tempo seco (simulado)", "sem chuva (simulada)"),
+        }
+        return mapa[FORCA_CLIMA]
     try:
         return weather_service.get_rain_intensity()
     except Exception:

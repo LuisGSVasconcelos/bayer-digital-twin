@@ -11,16 +11,22 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
+import langgraph_agent as lga
 from langgraph_agent import build_app, planta_bayer, estado_inicial
 from weather_service import weather_service
 
 st.set_page_config(page_title="Bayer Process Control Room", page_icon="🏭", layout="wide")
 
 SETPOINT = 65.0
+SUBSTEPS_PER_TICK = 10  # A) varios ciclos fisicos por tick (relogio acelerado)
 
 # Inicializacao do estado da sessao
 if "agente" not in st.session_state:
     st.session_state.planta = planta_bayer
+    # B) cenário demo: decantadores acima do limiar critico → dispara HITL visível
+    planta_bayer.t_paralelo_a.volume = planta_bayer.t_paralelo_a.capacidade * 0.805
+    planta_bayer.t_paralelo_b.volume = planta_bayer.t_paralelo_b.capacidade * 0.802
+    lga.FORCA_CLIMA = "Forte"  # chuva simulada (demo offline) para ativar o ramo critico
     st.session_state.agente = build_app()
     st.session_state.config_agente = {"configurable": {"thread_id": "dashboard"}}
     st.session_state.estado_atual = dict(estado_inicial)
@@ -34,12 +40,22 @@ if "agente" not in st.session_state:
 
 def executar_ciclo():
     try:
-        for _ in st.session_state.agente.stream(
-                st.session_state.estado_atual, st.session_state.config_agente):
-            pass
-        snap = st.session_state.agente.get_state(st.session_state.config_agente)
+        # Seguranca: se ja ha HITL pendente, NAO re-stream (evita burlar a aprovacao)
+        snap0 = st.session_state.agente.get_state(st.session_state.config_agente)
+        if snap0 and snap0.next:
+            return "⚠️ Aprovação Humana Necessária!"
+
+        snap = None
+        alerta = "Normal"
+        for _ in range(SUBSTEPS_PER_TICK):
+            for _ev in st.session_state.agente.stream(
+                    st.session_state.estado_atual, st.session_state.config_agente):
+                pass
+            snap = st.session_state.agente.get_state(st.session_state.config_agente)
+            if snap.next:
+                alerta = "⚠️ Aprovação Humana Necessária!"
+                break
         dados = snap.values
-        alerta = "Normal" if not snap.next else "⚠️ Aprovação Humana Necessária!"
 
         planta = st.session_state.planta
         novo = {
@@ -75,13 +91,24 @@ if st.sidebar.button("⏹️ Parar"):
 speed = st.sidebar.slider("Velocidade (ciclos/s)", 1, 20, 5)
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("🌤️ Clima")
-try:
-    chuva, desc, alerta = weather_service.get_rain_intensity()
-    st.sidebar.metric("Chuva Atual", f"{chuva} mm/h", delta=desc)
-    st.sidebar.caption(alerta)
-except Exception:
-    st.sidebar.error("Clima offline")
+st.sidebar.subheader("🌤️ Clima (demo)")
+cenario = st.sidebar.selectbox(
+    "Cenário de clima",
+    ["Forte", "Moderada", "Nenhuma", "Real (API)"],
+    index=0,
+    help="Forte/Moderada forçam chuva simulada (funcionam offline). \"Real\" usa a API OpenWeather.",
+)
+lga.FORCA_CLIMA = None if cenario == "Real (API)" else cenario
+if cenario == "Real (API)":
+    try:
+        chuva, desc, alerta = weather_service.get_rain_intensity()
+        st.sidebar.metric("Chuva (API)", f"{chuva} mm/h", delta=desc)
+    except Exception:
+        st.sidebar.error("Clima offline")
+else:
+    mm = {"Forte": 12.0, "Moderada": 0.5, "Nenhuma": 0.0}[cenario]
+    st.sidebar.metric("Chuva (simulada)", f"{mm} mm/h", delta=cenario)
+st.sidebar.caption(f"Simulação acelerada: {SUBSTEPS_PER_TICK} ciclos/tick")
 
 # ------------------------------ KPIs ------------------------------
 st.title("🏭 Digital Twin - Processo Bayer")
