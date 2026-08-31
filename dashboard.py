@@ -141,11 +141,15 @@ if not df.empty:
 
     fig1 = make_subplots(specs=[[{"secondary_y": True}]])
     fig1.add_trace(go.Scatter(x=df["timestamp"], y=df["nivel_PA"], name="Nível PA", line=dict(color="red")))
+    fig1.add_trace(go.Scatter(x=df["timestamp"], y=df["nivel_PB"], name="Nível PB", line=dict(color="orange")))
     fig1.add_trace(go.Scatter(x=df["timestamp"], y=[SETPOINT] * len(df), name="Setpoint",
                               line=dict(color="green", dash="dash")))
     fig1.add_trace(go.Bar(x=df["timestamp"], y=df["abertura_PA"], name="Abertura PA",
                           marker_color="orange", opacity=0.5), secondary_y=True)
-    fig1.update_layout(title="Controle de Nível (PV x SP x MV)", height=300, hovermode="x unified")
+    fig1.add_trace(go.Bar(x=df["timestamp"], y=df["abertura_PB"], name="Abertura PB",
+                          marker_color="teal", opacity=0.4), secondary_y=True)
+    fig1.update_layout(title="Controle de Nível (PV x SP x MV)", height=300, hovermode="x unified",
+                       legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0))
     fig1.update_yaxes(title_text="Nível (%)", secondary_y=False)
     fig1.update_yaxes(title_text="Abertura (%)", secondary_y=True, range=[0, 100])
     st.plotly_chart(fig1, width="stretch")
