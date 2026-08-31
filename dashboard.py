@@ -85,8 +85,12 @@ def executar_ciclo():
             "teor_sio2": dados.get("teor_sio2_atual", 5.0),
             "alerta_agente": alerta,
         }
-        st.session_state.historico = pd.concat(
-            [st.session_state.historico, pd.DataFrame([novo])], ignore_index=True).tail(200)
+        novo_df = pd.DataFrame([novo])
+        if st.session_state.historico.empty:
+            st.session_state.historico = novo_df
+        else:
+            st.session_state.historico = pd.concat(
+                [st.session_state.historico, novo_df], ignore_index=True).tail(200)
         return alerta
     except Exception as e:
         st.error(f"Erro: {e}")
