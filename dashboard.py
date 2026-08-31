@@ -18,14 +18,17 @@ from weather_service import weather_service
 st.set_page_config(page_title="Bayer Process Control Room", page_icon="🏭", layout="wide")
 
 SETPOINT = 65.0
-SUBSTEPS_PER_TICK = 10  # A) varios ciclos fisicos por tick (relogio acelerado)
+SUBSTEPS_PER_TICK = 30  # A) varios ciclos fisicos por tick (relogio acelerado)
 
 # Inicializacao do estado da sessao
 if "agente" not in st.session_state:
     st.session_state.planta = planta_bayer
-    # B) cenário demo: decantadores acima do limiar critico → dispara HITL visível
-    planta_bayer.t_paralelo_a.volume = planta_bayer.t_paralelo_a.capacidade * 0.805
-    planta_bayer.t_paralelo_b.volume = planta_bayer.t_paralelo_b.capacidade * 0.802
+    # B) cenário demo: decantadores POUCO ABAIXO do limiar critico (79.5%) —
+    #    o loop roda livre e o nivel SOBE visivelmente ate cruzar 80 e disparar HITL
+    planta_bayer.t_paralelo_a.volume = planta_bayer.t_paralelo_a.capacidade * 0.795
+    planta_bayer.t_paralelo_b.volume = planta_bayer.t_paralelo_b.capacidade * 0.790
+    # demo limpa: desabilita spikes de sensor p/ HITL vir da subida REAL do nível
+    planta_bayer.gerador.config["spike_sensor"]["probabilidade"] = 0.0
     lga.FORCA_CLIMA = "Forte"  # chuva simulada (demo offline) para ativar o ramo critico
     st.session_state.agente = build_app()
     st.session_state.config_agente = {"configurable": {"thread_id": "dashboard"}}
@@ -117,9 +120,9 @@ df = st.session_state.historico
 if not df.empty:
     ultimo = df.iloc[-1]
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("📊 Nível PA", f"{ultimo['nivel_PA']:.1f}%",
+    c1.metric("📊 Nível PA", f"{ultimo['nivel_PA']:.2f}%",
               "Crítico!" if ultimo["nivel_PA"] > 80 else "OK")
-    c2.metric("📊 Nível PB", f"{ultimo['nivel_PB']:.1f}%")
+    c2.metric("📊 Nível PB", f"{ultimo['nivel_PB']:.2f}%")
     c3.metric("🧪 TC Saída", f"{ultimo['tc_saida']:.1f} g/L")
     c4.metric("💧 Perda Soda", f"{ultimo['soda_perdida_pa'] + ultimo['soda_perdida_pb']:.2f} kg/s")
 
