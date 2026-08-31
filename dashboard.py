@@ -29,12 +29,10 @@ if "agente" not in st.session_state:
     #    Aprovar libera a valvula; o controle modulante regula ate o setpoint e segura.
     planta_bayer.t_paralelo_a.volume = planta_bayer.t_paralelo_a.capacidade * 0.805
     planta_bayer.t_paralelo_b.volume = planta_bayer.t_paralelo_b.capacidade * 0.803
-    # demo limpa: silencia flood de prints; spikes desabilitados. Disturbios de QUIMICA
-    # (silica/diluicao TC) ativos -> perda de soda e TC variam; alimentacao constante
-    # (demais disturbios desligados) p/ o nivel segurar no setpoint.
+    # demo: o painel "Distúrbios" do sidebar controla quais estao ativos. Todos podem
+    # ficar ligados: com balanco corrigido + PI, o nivel segura no setpoint.
     planta_bayer.gerador.ativo = True
-    planta_bayer.gerador.config["only_chemistry"] = True
-    planta_bayer.gerador.config["spike_sensor"]["probabilidade"] = 0.0
+    planta_bayer.gerador.config.pop("only_chemistry", None)
     lga.VERBOSE = False
     sim.VERBOSE = False
     afc.VERBOSE = False
@@ -134,6 +132,23 @@ else:
     lga.FORCA_CLIMA = cenario
     mm = {"Forte": 0.25, "Moderada": 0.05, "Nenhuma": 0.0}[cenario]
     st.sidebar.metric("Chuva (simulada)", f"{mm} mm/s", delta=cenario)
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("🌩️ Distúrbios")
+_hab = {
+    "alimentacao": st.sidebar.checkbox("Variação de alimentação", value=True),
+    "desgaste": st.sidebar.checkbox("Desgaste da bomba", value=True),
+    "stiction": st.sidebar.checkbox("Atrito da válvula (stiction)", value=True),
+    "desbalanceamento": st.sidebar.checkbox("Desbalanceamento PA/PB", value=True),
+    "tc_diluicao": st.sidebar.checkbox("Diluição de TC", value=True),
+    "silica": st.sidebar.checkbox("Sílica (perda de soda)", value=True),
+}
+planta_bayer.gerador.config["disturbios_habilitados"] = _hab
+planta_bayer.gerador.config.pop("only_chemistry", None)
+planta_bayer.gerador.config["spike_sensor"]["probabilidade"] = (
+    0.02 if st.sidebar.checkbox("Picos de sensor (ruído de leitura)", value=False,
+                                help="Adiciona picos esporádicos na leitura dos níveis") else 0.0)
+
 st.sidebar.caption(f"Simulação acelerada: {SUBSTEPS_PER_TICK} ciclos/tick")
 
 # ------------------------------ KPIs ------------------------------

@@ -170,6 +170,9 @@ No painel:
   **chuva de forma contínua** com o **slider "Manual..."** (0–0,30 mm/s), ou use a **API** real;
 - quando o alerta de HITL aparecer, o loop **pausa** (não congela) e abre o botão
   **✅ Aprovar Ação Emergencial** no painel **HITL**; clique-o para liberar a válvula;
+- no painel **🌩️ Distúrbios**, **ligue/desligue** cada distúrbio (variação de alimentação,
+  desgaste da bomba, atrito da válvula, desbalanceamento PA/PB, diluição de TC, sílica e picos
+  de sensor) — **todos ficam ativos por padrão**, mas você pode desativar os que quiser;
 - acompanhe KPIs (níveis, TC, perda de soda) e gráficos (PV × SP × MV, química, distúrbios).
 
 **Comportamento do controle:** o agente atua como **regulador PI suave** (proporcional +

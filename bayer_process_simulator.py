@@ -163,21 +163,29 @@ class GeradorDisturbios:
 
         self.tempo_simulacao += 1
 
-        # Modo "só-quimica": aplica apenas disturbios de QUIMICA (silica e diluicao do TC),
-        # que NAO afetam o nivel — permitem perda de soda e TC variarem com alimentacao
-        # constante (nivel segura no setpoint no demo).
-        if self.config.get("only_chemistry", False):
+        # Quais disturbios estao habilitados (padrao: todos). only_chemistry = preset so-quimica.
+        hab = dict(self.config.get("disturbios_habilitados", {}))
+        if self.config.get("only_chemistry"):
+            hab = {"alimentacao": False, "desgaste": False, "stiction": False,
+                   "desbalanceamento": False, "tc_diluicao": True, "silica": True}
+
+        def on(nome):
+            return hab.get(nome, True)
+
+        if on("alimentacao"):
+            self._disturbio_alimentacao(planta)
+        if on("desgaste"):
+            self._disturbio_desgaste_bomba(planta)
+        if on("stiction"):
+            self._disturbio_stiction(planta)
+        fator = 0.5
+        if on("desbalanceamento"):
+            fator = self._disturbio_desbalanceamento()
+        if on("tc_diluicao"):
             self._disturbio_diluicao_tc(planta)
+        sio2 = 5.0
+        if on("silica"):
             sio2 = self._disturbio_silica()
-            return 0.5, sio2
-
-        self._disturbio_alimentacao(planta)
-        self._disturbio_desgaste_bomba(planta)
-        self._disturbio_stiction(planta)
-        fator = self._disturbio_desbalanceamento()
-        self._disturbio_diluicao_tc(planta)
-        sio2 = self._disturbio_silica()
-
         return fator, sio2
 
     def _disturbio_alimentacao(self, planta):
