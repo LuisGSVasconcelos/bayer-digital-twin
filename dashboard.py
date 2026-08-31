@@ -139,7 +139,7 @@ if not df.empty:
     fig1.update_layout(title="Controle de Nível (PV x SP x MV)", height=300, hovermode="x unified")
     fig1.update_yaxes(title_text="Nível (%)", secondary_y=False)
     fig1.update_yaxes(title_text="Abertura (%)", secondary_y=True, range=[0, 100])
-    st.plotly_chart(fig1, use_container_width=True)
+    st.plotly_chart(fig1, width="stretch")
 
     fig2 = make_subplots(specs=[[{"secondary_y": True}]])
     fig2.add_trace(go.Scatter(x=df["timestamp"], y=df["tc_saida"], name="TC (g/L)",
@@ -149,7 +149,7 @@ if not df.empty:
     fig2.add_trace(go.Bar(x=df["timestamp"], y=df["chuva_mm_h"], name="Chuva (mm/h)",
                           marker_color="blue", opacity=0.3), secondary_y=True)
     fig2.update_layout(title="Química e Distúrbios", height=300)
-    st.plotly_chart(fig2, use_container_width=True)
+    st.plotly_chart(fig2, width="stretch")
 
     with st.expander("📋 Log de Eventos"):
         st.dataframe(df.tail(10)[["timestamp", "alerta_agente", "nivel_PA", "tc_saida"]])
@@ -159,12 +159,15 @@ else:
 # ------------------------------ LOOP ------------------------------
 status_placeholder = st.sidebar.empty()
 if st.session_state.executando:
-    status_placeholder.success("🟢 Executando...")
     alerta = executar_ciclo()
     if "Humana" in alerta:
-        status_placeholder.warning("⏸️ Aguardando Aprovação (HITL)")
-    time.sleep(1.0 / speed)
-    st.rerun()
+        # HITL: PAUSA o loop (sem rerun) p/ deixar o bloco HITL renderizar o botao de aprovar.
+        st.session_state.executando = False
+        status_placeholder.warning("⏸️ HITL: aguardando aprovação. Aprove no painel HITL ao lado.")
+    else:
+        status_placeholder.success("🟢 Executando...")
+        time.sleep(1.0 / speed)
+        st.rerun()
 else:
     status_placeholder.info("⏹️ Pausado")
 
@@ -179,6 +182,7 @@ try:
                 st.session_state.config_agente, {}, as_node="aguardar_operador")
             for _ in st.session_state.agente.stream(None, st.session_state.config_agente):
                 pass
+            st.session_state.executando = True  # retoma automaticamente (drena o nivel)
             st.rerun()
     else:
         st.sidebar.success("✅ Nenhuma ação pendente.")

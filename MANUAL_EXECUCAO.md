@@ -167,16 +167,19 @@ No painel:
 - clique **Iniciar** para rodar a simulação e **Parar** para pausar;
 - ajuste a **velocidade** (ciclos/s) — a simulação roda acelerada (vários ciclos/tick);
 - no seletor **Cenário de clima**, force chuva (**Forte/Moderada**, funciona offline) ou use a **API** real;
-- quando o alerta de HITL surgir, clique **Aprovar Ação Emergencial** para liberar a válvula;
+- quando o alerta de HITL aparecer, o loop **pausa** (não congela) e abre o botão
+  **✅ Aprovar Ação Emergencial** no painel **HITL**; clique-o para liberar a válvula;
 - acompanhe KPIs (níveis, TC, perda de soda) e gráficos (PV × SP × MV, química, distúrbios).
 
 **Cenário de demonstração (A+B):** o dashboard abre com os decantadores pouco **abaixo do
-limiar crítico (~79,8%)** e chuva simulada. O nível **sobe visivelmente** até **cruzar 80%**
-e disparar o **HITL uma vez**; aprovar abre a válvula e o nível desce. Como a dinâmica de
-nível é intrinsecamente lenta (balanço quase em estado estacionário — a chuva entra e sai
-pelo licor clarificado), aceleramos o relógio e exibimos 2 casas decimais (a simulação roda
-leve, ~60 ms/tick, para não travar a interface). Os **spikes de sensor são desabilitados**
-no demo para o HITL vir da subida real do nível.
+limiar crítico (~79,8%)** e chuva simulada. O nível **sobe visivelmente** e, ao atingir o
+estado crítico (**>70% com tendência de alta** ou **>80%**), dispara o **HITL**: o loop **pausa**
+(gráficos e log param de atualizar — comportamento correto de espera) e o botão **Aprovar**
+fica disponível no painel HITL. Aprovar **abre a válvula** e o **nível desce**. Como o tanque
+permanece perto do limiar, o HITL pode **re-disparar** ao voltar a subir — é o gate de
+segurança agindo (cada vez pausa com aprovação clicável, sem travar a interface). A
+simulação roda leve (~60 ms/tick) e os **spikes de sensor são desabilitados** no demo para o
+HITL vir da condição real do nível.
 
 ---
 
