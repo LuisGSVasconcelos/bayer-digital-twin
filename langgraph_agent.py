@@ -59,6 +59,7 @@ class BayerState(TypedDict):
     teor_sio2_atual: float
     soda_perdida: Dict[str, float]
     tc_saida_decantadores: float
+    emergencia_aprovada: bool  # latch: aprovacao vale ate o nivel sair do critico
 
 
 FORCA_CLIMA: str | None = None  # demo offline: "Forte" | "Moderada" | "Nenhuma" | None
@@ -191,6 +192,7 @@ def calcular_controle(state: BayerState) -> Dict:
 
 def executar_controle_fisico(state: BayerState) -> Dict:
     aberturas = state.get("abertura_recomendada", {}) or {}
+    criticos = state.get("tanques_criticos", []) or []
     setpoint = state.get("setpoint", 65.0)
     filtrados = state.get("niveis_filtrados", {}) or {}
     if VERBOSE:
@@ -207,12 +209,19 @@ def executar_controle_fisico(state: BayerState) -> Dict:
     if VERBOSE:
         print(f"  ✅ PA: {planta_bayer.t_paralelo_a.abertura_valvula * 100:.1f}% "
               f"| PB: {planta_bayer.t_paralelo_b.abertura_valvula * 100:.1f}%")
+    # Libera a aprovacao de emergencia quando o nivel ja nao e critico
+    # (aprovacao unica vale ate o nivel sair do critico; sem re-HITL por ciclo).
+    if not criticos:
+        return {"emergencia_aprovada": False}
     return {}
 
 
 def rotear_fluxo(state: BayerState) -> str:
-    # Critico + chuva -> HITL; caso contrario vai ao controle modulante (valvulares).
-    if state.get("acao_necessaria", False):
+    acao = state.get("acao_necessaria", False)
+    aprovado = state.get("emergencia_aprovada", False)
+    # HITL apenas quando critico+chuva sem aprovacao em curso. Se ja aprovado,
+    # continua atuando (drenagem) sem re-pedir aprovacao a cada ciclo.
+    if acao and not aprovado:
         return "aguardar_operador"
     return "executar_controle"
 

@@ -23,23 +23,27 @@ for _e in agent.app.stream(INIT, cfg): pass
 assert agent.app.get_state(cfg).next, "HITL esperado no 1o ciclo"
 print("HITL no 1o ciclo ✓")
 
-# aprovar
-agent.app.update_state(cfg, {}, as_node="aguardar_operador")
+# aprovar (com latch -> nao re-pede HITL durante a drenagem)
+agent.app.update_state(cfg, {"emergencia_aprovada": True}, as_node="aguardar_operador")
 for _ in agent.app.stream(None, cfg): pass
 print("aprovado, abertura inicial:", round(p.t_paralelo_a.abertura_valvula, 2))
 
 # rodar muitos ciclos (regulacao) ate assentar no setpoint; printar a cada 40
 hist = []
+re_htil = 0
 for i in range(400):
     for _e in agent.app.stream(INIT, cfg): pass
+    if agent.app.get_state(cfg).next:
+        re_htil += 1
     hist.append((i, p.t_paralelo_a.percentual, p.t_paralelo_a.abertura_valvula))
     if i % 40 == 0:
         print(f"  cyc{i}: PA={p.t_paralelo_a.percentual:.2f}% abertura={p.t_paralelo_a.abertura_valvula:.2f}")
 
 final = p.t_paralelo_a.percentual
 minlvl = min(h[1] for h in hist)
-print(f"FINAL PA={final:.2f}% | minimo observado={minlvl:.2f}%")
+print(f"FINAL PA={final:.2f}% | minimo observado={minlvl:.2f}% | re-HITL={re_htil} (de {len(hist)})")
+assert re_htil == 0, "FALHA: re-disparou HITL apos aprovacao (deveria drenar ate 65)"
 assert minlvl > 63, "FALHA: nivel caiu abaixo do setpoint (nao segurou em 65)"
 assert 62 <= final <= 68, f"FALHA: nao segurou perto do setpoint (final={final:.1f})"
-assert not agent.app.get_state(cfg).next, "FALHA: re-disparou HITL"
-print("PASS: controle segura o nivel no setpoint (nao cai abaixo de 65)")
+assert not agent.app.get_state(cfg).next, "FALHA: HITL pendente no final"
+print("PASS: aprovacao unica -> drena ate 65 sem re-HITL e segura")

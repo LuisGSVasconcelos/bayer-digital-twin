@@ -99,6 +99,40 @@ def test_sem_chuva_nao_aciona_acao_critica():
     assert not snap.next, "Sem chuva nao deveria exigir aprovacao emergencial"
 
 
+def test_aprovacao_unica_nao_re_dispara_htil():
+    """Aprovacao trava: enquanto o nivel continua critico, NAO volta a pedir HITL a cada
+    ciclo (a valvula continua drenando). O latch libera quando o nivel sai do critico."""
+    tid = "t5"
+    config = {"configurable": {"thread_id": tid}}
+    est = _proxima_estado_inicial()
+    agent.planta_bayer.t_paralelo_a.volume = agent.planta_bayer.t_paralelo_a.capacidade * 0.85
+
+    for _ in agent.app.stream(est, config):
+        pass
+    snap = agent.app.get_state(config)
+    assert snap.next, "HITL esperado antes da aprovacao"
+
+    # aprova com latch (como o dashboard)
+    agent.app.update_state(config, {"emergencia_aprovada": True}, as_node="aguardar_operador")
+    for _ in agent.app.stream(None, config):
+        pass
+    assert agent.planta_bayer.t_paralelo_a.abertura_valvula > 0.0
+
+    # proximo ciclo: ainda critico, mas aprovado -> NAO re-dispara HITL
+    for _ in agent.app.stream(_proxima_estado_inicial(), config):
+        pass
+    snap2 = agent.app.get_state(config)
+    assert not snap2.next, "Aprovacao unica deveria seguir drenando sem re-HITL"
+
+
+def test_aprovacao_libera_quando_nao_critico():
+    """executar_controle limpa o latch (emergencia_aprovada=False) quando nao ha critico."""
+    out = agent.executar_controle_fisico({"tanques_criticos": [], "setpoint": 65.0,
+                                          "niveis_filtrados": {"PA": 60.0, "PB": 60.0},
+                                          "abertura_recomendada": {"PA": 0.0, "PB": 0.0}})
+    assert out.get("emergencia_aprovada") is False
+
+
 def test_a4_limiar_filtrado_rejeita_spike():
     """A4: o limiar critico usa o nivel FILTRADO (EMA), nao o bruto (com spike).
 

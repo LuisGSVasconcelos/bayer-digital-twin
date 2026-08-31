@@ -182,8 +182,11 @@ try:
     snap = st.session_state.agente.get_state(st.session_state.config_agente)
     if snap.next:
         if st.sidebar.button("✅ Aprovar Ação Emergencial"):
+            # trava a aprovacao: continua drenando ate o nivel sair do critico,
+            # sem re-pedir aprovacao a cada ciclo
             st.session_state.agente.update_state(
-                st.session_state.config_agente, {}, as_node="aguardar_operador")
+                st.session_state.config_agente, {"emergencia_aprovada": True},
+                as_node="aguardar_operador")
             for _ in st.session_state.agente.stream(None, st.session_state.config_agente):
                 pass
             st.session_state.executando = True  # retoma automaticamente (drena o nivel)
