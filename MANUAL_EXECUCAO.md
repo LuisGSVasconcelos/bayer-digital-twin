@@ -171,12 +171,12 @@ No painel:
 - acompanhe KPIs (níveis, TC, perda de soda) e gráficos (PV × SP × MV, química, distúrbios).
 
 **Cenário de demonstração (A+B):** o dashboard abre com os decantadores pouco **abaixo do
-limiar crítico (~79,5%)** e chuva simulada. O nível **sobe visivelmente** (relógio acelerado,
-vários ciclos/tick) até **cruzar 80%** e disparar o **HITL uma vez**; aprovar abre a válvula e
-o nível desce. Como a dinâmica de nível é intrinsecamente lenta (balanço quase em estado
-estacionário — a chuva entra e sai pelo licor clarificado), aceleramos o relógio e exibimos
-2 casas decimais. Os **spikes de sensor são desabilitados** no demo para o HITL vir da subida
-real do nível (com EMA que persiste entre ciclos).
+limiar crítico (~79,8%)** e chuva simulada. O nível **sobe visivelmente** até **cruzar 80%**
+e disparar o **HITL uma vez**; aprovar abre a válvula e o nível desce. Como a dinâmica de
+nível é intrinsecamente lenta (balanço quase em estado estacionário — a chuva entra e sai
+pelo licor clarificado), aceleramos o relógio e exibimos 2 casas decimais (a simulação roda
+leve, ~60 ms/tick, para não travar a interface). Os **spikes de sensor são desabilitados**
+no demo para o HITL vir da subida real do nível.
 
 ---
 

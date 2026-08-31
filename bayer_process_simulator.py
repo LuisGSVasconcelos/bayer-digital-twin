@@ -8,6 +8,8 @@ e um gerador de disturbios operacionais.
 import math
 import random
 
+VERBOSE = True  # False silencia prints por ciclo (dashboard)
+
 
 class TanqueIndustrial:
     """Tanque de digestao (fechado, sem influencia de chuva)."""
@@ -39,7 +41,8 @@ class TanqueIndustrial:
 
         if self.volume > self.capacidade:
             self.volume = self.capacidade
-            print(f"🚨 TRANSBORDAMENTO no {self.nome}!")
+            if VERBOSE:
+                print(f"🚨 TRANSBORDAMENTO no {self.nome}!")
         elif self.volume < 0:
             self.volume = 0
             self.vazao_saida_normal = 0
@@ -109,7 +112,8 @@ class DecantadorIndustrial(TanqueIndustrial):
         self.volume += variacao_volume
         if self.volume > self.capacidade:
             self.volume = self.capacidade
-            print(f"🚨 TRANSBORDAMENTO CRÍTICO no {self.nome}!")
+            if VERBOSE:
+                print(f"🚨 TRANSBORDAMENTO CRÍTICO no {self.nome}!")
         elif self.volume < 0:
             self.volume = 0
 
@@ -120,7 +124,7 @@ class DecantadorIndustrial(TanqueIndustrial):
         self.tc_licor_saida = self.tc
         self.tc = round(max(0.0, self.tc), 2)
 
-        if self.soda_perdida_lama > 0.5:
+        if self.soda_perdida_lama > 0.5 and VERBOSE:
             print(f"🧪 [PERDA DE SODA] {self.nome}: {self.soda_perdida_lama:.2f} kg/s")
         return self.vazao_licor_clarificado
 
@@ -214,12 +218,13 @@ class GeradorDisturbios:
             erro_tc = tc_s2 - config["setpoint"]
             self.vazao_diluicao_tc = min(config["vazao_diluicao_maxima"], erro_tc * 0.12) + random.uniform(-0.2, 0.5)
             self.vazao_diluicao_tc = round(max(0.0, self.vazao_diluicao_tc), 2)
-            if not self.alerta_tc_emitido:
+            if not self.alerta_tc_emitido and VERBOSE:
                 print(f"🧪 [TC - ALERTA] TC elevado! {tc_s2:.1f} g/L -> Diluição: {self.vazao_diluicao_tc:.1f} L/s")
                 self.alerta_tc_emitido = True
         elif tc_s2 > config["limite_critica"]:
             self.vazao_diluicao_tc = config["vazao_diluicao_maxima"]
-            print(f"🧪🚨 [TC - EMERGÊNCIA] TC CRÍTICO! {tc_s2:.1f} g/L")
+            if VERBOSE:
+                print(f"🧪🚨 [TC - EMERGÊNCIA] TC CRÍTICO! {tc_s2:.1f} g/L")
         else:
             self.vazao_diluicao_tc = max(0.0, self.vazao_diluicao_tc - 0.3)
             self.alerta_tc_emitido = False
@@ -235,7 +240,8 @@ class GeradorDisturbios:
         if random.random() < self.config["spike_sensor"]["probabilidade"]:
             amp = self.config["spike_sensor"]["amplitude"]
             spike = random.uniform(amp * 0.5, amp)
-            print(f"⚡ [SPIKE] Sensor +{spike:.1f}%")
+            if VERBOSE:
+                print(f"⚡ [SPIKE] Sensor +{spike:.1f}%")
             return nivel_atual + spike
         return nivel_atual
 

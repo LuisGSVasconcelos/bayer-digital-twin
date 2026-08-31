@@ -13,22 +13,26 @@ from plotly.subplots import make_subplots
 
 import langgraph_agent as lga
 from langgraph_agent import build_app, planta_bayer, estado_inicial
+import bayer_process_simulator as sim
+import adaptive_fuzzy_controller as afc
 from weather_service import weather_service
 
 st.set_page_config(page_title="Bayer Process Control Room", page_icon="🏭", layout="wide")
 
 SETPOINT = 65.0
-SUBSTEPS_PER_TICK = 30  # A) varios ciclos fisicos por tick (relogio acelerado)
+SUBSTEPS_PER_TICK = 10  # A) varios ciclos fisicos por tick (relogio acelerado, leve)
 
 # Inicializacao do estado da sessao
 if "agente" not in st.session_state:
     st.session_state.planta = planta_bayer
-    # B) cenário demo: decantadores POUCO ABAIXO do limiar critico (79.5%) —
-    #    o loop roda livre e o nivel SOBE visivelmente ate cruzar 80 e disparar HITL
-    planta_bayer.t_paralelo_a.volume = planta_bayer.t_paralelo_a.capacidade * 0.795
-    planta_bayer.t_paralelo_b.volume = planta_bayer.t_paralelo_b.capacidade * 0.790
-    # demo limpa: desabilita spikes de sensor p/ HITL vir da subida REAL do nível
+    # B) cenário demo: decantadores abaixo do limiar (79.8%) — sobe livre até cruzar 80
+    planta_bayer.t_paralelo_a.volume = planta_bayer.t_paralelo_a.capacidade * 0.798
+    planta_bayer.t_paralelo_b.volume = planta_bayer.t_paralelo_b.capacidade * 0.796
+    # demo limpa: desabilita spikes p/ HITL vir da subida REAL; silencia flood de prints
     planta_bayer.gerador.config["spike_sensor"]["probabilidade"] = 0.0
+    lga.VERBOSE = False
+    sim.VERBOSE = False
+    afc.VERBOSE = False
     lga.FORCA_CLIMA = "Forte"  # chuva simulada (demo offline) para ativar o ramo critico
     st.session_state.agente = build_app()
     st.session_state.config_agente = {"configurable": {"thread_id": "dashboard"}}

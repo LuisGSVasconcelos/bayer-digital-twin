@@ -1,6 +1,8 @@
 """Controlador Fuzzy com ganho adaptativo (gradiente descendente + momentum)."""
 from fuzzy_controller import FuzzyController
 
+VERBOSE = True  # False silencia os prints por ciclo (dashboard)
+
 
 class AdaptiveFuzzyController(FuzzyController):
     def __init__(self, taxa_aprendizado: float = 0.001, momentum: float = 0.9,
@@ -33,7 +35,7 @@ class AdaptiveFuzzyController(FuzzyController):
         self.historico_ganho.append(self.ganho)
         self.historico_erro.append(erro)
 
-        if abs(variacao) > 0.01:
+        if abs(variacao) > 0.01 and VERBOSE:
             print(f"🔄 [ADAPT] Ciclo {self.ciclo}: Erro={erro:.2f}%, u_fuzzy={u_fuzzy:.3f}, Ganho={self.ganho:.3f}")
 
         return round(u_real, 3)

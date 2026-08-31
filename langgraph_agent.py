@@ -62,6 +62,7 @@ class BayerState(TypedDict):
 
 
 FORCA_CLIMA: str | None = None  # demo offline: "Forte" | "Moderada" | "Nenhuma" | None
+VERBOSE = True  # False silencia floods de print por ciclo (usado no dashboard)
 
 
 def obter_chuva():
@@ -99,7 +100,8 @@ def atualizar_ema_e_tendencia(nivel_bruto: float, ema_anterior) -> tuple:
 # ----------------------------------------------------------------------------
 def ler_sensores_planta(state: BayerState) -> Dict:
     intensidade, desc, alerta = obter_chuva()
-    print(f"\n🌦️ Chuva: {intensidade} mm/h | {desc}")
+    if VERBOSE:
+        print(f"\n🌦️ Chuva: {intensidade} mm/h | {desc}")
 
     if intensidade == 0:
         clima = "Nenhuma"
@@ -180,8 +182,9 @@ def calcular_controle(state: BayerState) -> Dict:
         erro = nivel - setpoint
         abertura = ctrl.calcular_abertura(erro, deriv)
         aberturas[tid] = round(abertura, 3)
-        print(f"🎛️ [FUZZY ADAPT {tid}] Erro={erro:.1f}% Deriv={deriv:.2f} "
-              f"-> Abertura={abertura * 100:.1f}% (Ganho={ctrl.ganho:.3f})")
+        if VERBOSE:
+            print(f"🎛️ [FUZZY ADAPT {tid}] Erro={erro:.1f}% Deriv={deriv:.2f} "
+                  f"-> Abertura={abertura * 100:.1f}% (Ganho={ctrl.ganho:.3f})")
 
     return {"abertura_recomendada": aberturas}
 
@@ -189,18 +192,22 @@ def calcular_controle(state: BayerState) -> Dict:
 def executar_controle_fisico(state: BayerState) -> Dict:
     aberturas = state.get("abertura_recomendada", {}) or {}
     criticos = state.get("tanques_criticos", []) or []
-    print("\n⚙️ [AUTOMAÇÃO] Aplicando ajuste modulante...")
+    if VERBOSE:
+        print("\n⚙️ [AUTOMAÇÃO] Aplicando ajuste modulante...")
 
     if "PA" in criticos:
         planta_bayer.t_paralelo_a.abertura_valvula = aberturas.get("PA", 0.0)
-        print(f"  ✅ PA: {aberturas.get('PA', 0.0) * 100:.1f}%")
+        if VERBOSE:
+            print(f"  ✅ PA: {aberturas.get('PA', 0.0) * 100:.1f}%")
     if "PB" in criticos:
         planta_bayer.t_paralelo_b.abertura_valvula = aberturas.get("PB", 0.0)
-        print(f"  ✅ PB: {aberturas.get('PB', 0.0) * 100:.1f}%")
+        if VERBOSE:
+            print(f"  ✅ PB: {aberturas.get('PB', 0.0) * 100:.1f}%")
     if not criticos:
         planta_bayer.t_paralelo_a.abertura_valvula = 0.0
         planta_bayer.t_paralelo_b.abertura_valvula = 0.0
-        print("  🔒 Válvulas fechadas (estável).")
+        if VERBOSE:
+            print("  🔒 Válvulas fechadas (estável).")
     return {}
 
 
