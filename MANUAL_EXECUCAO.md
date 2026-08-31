@@ -171,11 +171,10 @@ No painel:
   **✅ Aprovar Ação Emergencial** no painel **HITL**; clique-o para liberar a válvula;
 - acompanhe KPIs (níveis, TC, perda de soda) e gráficos (PV × SP × MV, química, distúrbios).
 
-**Comportamento do controle:** o agente atua como **regulador PI com faixa proporcional e
-faixa morta** das válvulas de drenagem — abertura cresce **gradualmente** conforme o nível fica
-acima do setpoint (**65%**, banda ~20 pt) e **fecha dentro da faixa morta (≈±0,5%) sem oscilar
-0–100%**. A ação integral elimina o desvio de regime causado por um distúrbio constante
-(chuva/alimentação), mantendo o nível em 65% com a válvula aberta o suficiente para compensar.
+**Comportamento do controle:** o agente atua como **regulador PI suave** (proporcional +
+integral) das válvulas de drenagem — a abertura **modula gradualmente** (banda ~20 pt) e a
+integral **mantém a abertura de regime** que equilibra a chuva/alimentação, **sem oscilar
+0–100%** e mantendo o nível no setpoint (**65%**, sem drenar abaixo).
 O **HITL** gateia apenas a **emergência** (nível **>80%** ou **>70% com tendência de alta** +
 chuva): nessa condição o loop **pausa** (gráficos/log param — espera correta) e mostra o botão
 **Aprovar**. Ao aprovar (uma vez), o controle traz o nível de volta ao setpoint e o **segura**.

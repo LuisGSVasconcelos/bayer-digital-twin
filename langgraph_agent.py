@@ -196,30 +196,25 @@ def executar_controle_fisico(state: BayerState) -> Dict:
     setpoint = state.get("setpoint", 65.0)
     filtrados = state.get("niveis_filtrados", {}) or {}
     if VERBOSE:
-        print("\n⚙️ [AUTOMAÇÃO] Controle PI das válvulas de drenagem...")
-    # Regulador PI com FAIXA PROPORCIONAL e FAIXA MORTA: deve modular suave (no lugar de
-    # relay 0-100%). Proporcional cresce com o erro acima do setpoint; a integral elimina
-    # o offset de disturbio constante (chuva/alimentacao); trava de setpoint nao drena abaixo.
-    BANDA_PROP = 20.0   # abertura 100% a ~20pt acima do setpoint
-    DEADBAND = 0.5      # dentro de ±0.5% do setpoint a valvula fica fechada (evita chattering)
-    KI = 0.008
+        print("\n⚙️ [AUTOMAÇÃO] Controle PI suave das válvulas de drenagem...")
+    # Regulador PI SEM zerar a integral: a valvula mantem a abertura de regime que
+    # equilibra a chuva/alimentacao, modulando suave (nao fecha em 0 nem pula 100).
+    # Anti-windup: para de integrar quando a valvula satura (1.0 ou 0.0).
+    BANDA_PROP = 20.0
+    KI = 0.01
     mapa = {"PA": planta_bayer.t_paralelo_a, "PB": planta_bayer.t_paralelo_b}
     for tid, tanque in mapa.items():
         nivel = filtrados.get(tid, setpoint)
         erro = nivel - setpoint
         integ = getattr(tanque, "_integ", 0.0)
-        if erro <= DEADBAND:
-            tanque._integ = 0.0        # trava de setpoint + faixa morta
-            tanque.abertura_valvula = 0.0
-            continue
-        prop = min(1.0, (erro - DEADBAND) / BANDA_PROP)
-        abertura_raw = prop + integ
-        if abertura_raw >= 1.0:
-            tanque._integ = integ       # anti-windup: valvula saturada, para de integrar
-        else:
-            integ = max(0.0, min(1.0, integ + KI * erro))
-            tanque._integ = integ
-        tanque.abertura_valvula = max(0.0, min(1.0, abertura_raw))
+        if erro < 0.0:
+            # fora do setpoint (nivel baixo): nao sobe a integral, decai rapido p/ nao
+            # drenar demais abaixo; valvula segue suave (sem snap que causa bang)
+            integ = integ * 0.85
+        elif not (erro / BANDA_PROP + integ >= 1.0):
+            integ = max(0.0, min(1.0, integ + KI * erro))   # anti-windup alto
+        tanque._integ = integ
+        tanque.abertura_valvula = max(0.0, min(1.0, erro / BANDA_PROP + integ))
     if VERBOSE:
         print(f"  ✅ PA: {planta_bayer.t_paralelo_a.abertura_valvula * 100:.1f}% "
               f"| PB: {planta_bayer.t_paralelo_b.abertura_valvula * 100:.1f}%")
