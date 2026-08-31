@@ -197,23 +197,29 @@ def executar_controle_fisico(state: BayerState) -> Dict:
     filtrados = state.get("niveis_filtrados", {}) or {}
     if VERBOSE:
         print("\n⚙️ [AUTOMAÇÃO] Controle PI das válvulas de drenagem...")
-    # Regulador PI: proporcional (fuzzy) + integral para eliminar o offset de regime
-    # de um disturbio constante (chuva/alimentacao). Trava de setpoint: nao drena abaixo.
-    KI = 0.012
+    # Regulador PI com FAIXA PROPORCIONAL e FAIXA MORTA: deve modular suave (no lugar de
+    # relay 0-100%). Proporcional cresce com o erro acima do setpoint; a integral elimina
+    # o offset de disturbio constante (chuva/alimentacao); trava de setpoint nao drena abaixo.
+    BANDA_PROP = 20.0   # abertura 100% a ~20pt acima do setpoint
+    DEADBAND = 0.5      # dentro de ±0.5% do setpoint a valvula fica fechada (evita chattering)
+    KI = 0.008
     mapa = {"PA": planta_bayer.t_paralelo_a, "PB": planta_bayer.t_paralelo_b}
     for tid, tanque in mapa.items():
         nivel = filtrados.get(tid, setpoint)
         erro = nivel - setpoint
         integ = getattr(tanque, "_integ", 0.0)
-        if erro <= 0.0:
-            tanque._integ = 0.0        # trava de setpoint: desliga a integral, nao drena abaixo
-            abertura = 0.0
+        if erro <= DEADBAND:
+            tanque._integ = 0.0        # trava de setpoint + faixa morta
+            tanque.abertura_valvula = 0.0
+            continue
+        prop = min(1.0, (erro - DEADBAND) / BANDA_PROP)
+        abertura_raw = prop + integ
+        if abertura_raw >= 1.0:
+            tanque._integ = integ       # anti-windup: valvula saturada, para de integrar
         else:
-            integ += KI * erro
-            integ = max(0.0, min(1.0, integ))   # anti-windup (fracao 0..1)
+            integ = max(0.0, min(1.0, integ + KI * erro))
             tanque._integ = integ
-            abertura = max(0.0, min(1.0, aberturas.get(tid, 0.0) + integ))
-        tanque.abertura_valvula = abertura
+        tanque.abertura_valvula = max(0.0, min(1.0, abertura_raw))
     if VERBOSE:
         print(f"  ✅ PA: {planta_bayer.t_paralelo_a.abertura_valvula * 100:.1f}% "
               f"| PB: {planta_bayer.t_paralelo_b.abertura_valvula * 100:.1f}%")
