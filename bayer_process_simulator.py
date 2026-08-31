@@ -95,7 +95,9 @@ class DecantadorIndustrial(TanqueIndustrial):
         self.soda_perdida_lama = soda_perdida_mecanica + soda_perdida_quimica
 
         vazao_licor_entrada = vazao_entrada * (1 - self.teor_solidos_alimentacao)
-        self.vazao_licor_clarificado = vazao_licor_entrada + agua_chuva - licor_preso_l_s
+        # Balanço corrigido: o licor clarificado sai apenas o licor SEPARADO (sem a chuva).
+        # A chuva ACUMULA no decantador (levanta o nivel); so sai por drenagem/overflow.
+        self.vazao_licor_clarificado = max(0.0, vazao_licor_entrada - licor_preso_l_s)
         self.vazao_lama = licor_preso_l_s + (vazao_solidos_saida / 1.5)
 
         soda_entrada_kg_s = (vazao_licor_entrada * tc_entrada) / 1000.0

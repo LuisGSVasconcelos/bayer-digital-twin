@@ -196,16 +196,24 @@ def executar_controle_fisico(state: BayerState) -> Dict:
     setpoint = state.get("setpoint", 65.0)
     filtrados = state.get("niveis_filtrados", {}) or {}
     if VERBOSE:
-        print("\n⚙️ [AUTOMAÇÃO] Controle modulante das válvulas de drenagem...")
-    # Regulador proporcional com trava de setpoint: abre a valvula conforme o erro
-    # (nivel acima do setpoint) e FECHA quando o nivel chega ao/abaixo do setpoint
-    # (nao drena abaixo de 65%). HITL (ramo critico) gateia apenas a emergência.
+        print("\n⚙️ [AUTOMAÇÃO] Controle PI das válvulas de drenagem...")
+    # Regulador PI: proporcional (fuzzy) + integral para eliminar o offset de regime
+    # de um disturbio constante (chuva/alimentacao). Trava de setpoint: nao drena abaixo.
+    KI = 0.012
     mapa = {"PA": planta_bayer.t_paralelo_a, "PB": planta_bayer.t_paralelo_b}
     for tid, tanque in mapa.items():
-        a = aberturas.get(tid, 0.0)
-        if filtrados.get(tid, 0.0) <= setpoint:
-            a = 0.0  # trava de setpoint: nao permite drenar abaixo
-        tanque.abertura_valvula = a
+        nivel = filtrados.get(tid, setpoint)
+        erro = nivel - setpoint
+        integ = getattr(tanque, "_integ", 0.0)
+        if erro <= 0.0:
+            tanque._integ = 0.0        # trava de setpoint: desliga a integral, nao drena abaixo
+            abertura = 0.0
+        else:
+            integ += KI * erro
+            integ = max(0.0, min(1.0, integ))   # anti-windup (fracao 0..1)
+            tanque._integ = integ
+            abertura = max(0.0, min(1.0, aberturas.get(tid, 0.0) + integ))
+        tanque.abertura_valvula = abertura
     if VERBOSE:
         print(f"  ✅ PA: {planta_bayer.t_paralelo_a.abertura_valvula * 100:.1f}% "
               f"| PB: {planta_bayer.t_paralelo_b.abertura_valvula * 100:.1f}%")

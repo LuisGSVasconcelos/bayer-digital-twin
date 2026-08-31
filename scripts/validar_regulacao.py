@@ -31,12 +31,12 @@ print("aprovado, abertura inicial:", round(p.t_paralelo_a.abertura_valvula, 2))
 # rodar muitos ciclos (regulacao) ate assentar no setpoint; printar a cada 40
 hist = []
 re_htil = 0
-for i in range(400):
+for i in range(1500):
     for _e in agent.app.stream(INIT, cfg): pass
     if agent.app.get_state(cfg).next:
         re_htil += 1
     hist.append((i, p.t_paralelo_a.percentual, p.t_paralelo_a.abertura_valvula))
-    if i % 40 == 0:
+    if i % 150 == 0:
         print(f"  cyc{i}: PA={p.t_paralelo_a.percentual:.2f}% abertura={p.t_paralelo_a.abertura_valvula:.2f}")
 
 final = p.t_paralelo_a.percentual

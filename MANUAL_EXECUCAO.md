@@ -171,21 +171,28 @@ No painel:
   **✅ Aprovar Ação Emergencial** no painel **HITL**; clique-o para liberar a válvula;
 - acompanhe KPIs (níveis, TC, perda de soda) e gráficos (PV × SP × MV, química, distúrbios).
 
-**Comportamento do controle:** o agente atua como **regulador proporcional** das válvulas de
-drenagem — abre conforme o nível fica acima do setpoint (**65%**) e **fecha quando o nível
-chega ao/abaixo do setpoint** (trava de setpoint: **não drena abaixo de 65%**). O **HITL**
-gateia apenas a **emergência** (nível **>80%** ou **>70% com tendência de alta** + chuva
-forte): nessa condição o loop **pausa** (gráficos/log param — espera correta) e mostra o botão
-**Aprovar**. Ao aprovar, o controle traz o nível de volta ao setpoint e o **segura**.
+**Comportamento do controle:** o agente atua como **regulador PI** (proporcional fuzzy +
+integral) das válvulas de drenagem — abre conforme o nível fica acima do setpoint (**65%**) e
+**fecha quando o nível chega ao/abaixo do setpoint** (trava de setpoint: **não drena abaixo de
+65%**). A ação integral elimina o desvio de regime causado por um distúrbio constante
+(chuva/alimentação), mantendo o nível em 65% com a válvula aberta o suficiente para compensar.
+O **HITL** gateia apenas a **emergência** (nível **>80%** ou **>70% com tendência de alta** +
+chuva): nessa condição o loop **pausa** (gráficos/log param — espera correta) e mostra o botão
+**Aprovar**. Ao aprovar (uma vez), o controle traz o nível de volta ao setpoint e o **segura**.
+
+**Balanço do decantador:** corrigido para que a **chuva e a alimentação afetem o nível** — o
+licor clarificado sai apenas o licor **separado** (sem a chuva); a chuva **acumula** no
+decantador e eleva o nível. O controle então **abre a válvula proporcionalmente à chuva** para
+manter os 65%. No modelo antigo, a chuva saía toda pelo clarificado e o nível ficava insensível
+a ela (balanço incorreto, agora corrigido).
 
 **Cenário de demonstração:** o dashboard abre com os decantadores **acima do limiar (≈80,5%)**
 — o HITL dispara já no primeiro ciclo (botão Aprovar disponível). Ao aprovar, a ação é
 **travada**: a válvula continua drenando **sem re-pedir aprovação a cada ciclo** até o nível
-sair do estado crítico, chegando ao setpoint (**~65%**) e se mantendo lá. Para permitir que o
-controle **segure** o nível no setpoint dentro do tempo de demonstração, o demo usa
-**alimentação constante** (gerador de distúrbios desligado) — a válvula de drenagem única não
-consegue contrapor o ruído dos distúrbios que puxa o nível para baixo. O conjunto completo de
-distúrbios está ativo no benchmark (`test_adaptive_controller.py`) e no simulador. A simulação
+sair do estado crítico, chegando ao setpoint (**~65%**) e se mantendo lá (a válvula mantém uma
+abertura para compensar a chuva). Para o nível segurar de forma estável na demonstração, o demo
+usa **alimentação constante** (gerador de distúrbios desligado); o conjunto completo de
+distúrbios fica ativo no benchmark (`test_adaptive_controller.py`) e no simulador. A simulação
 roda leve (~60 ms/tick) e os **spikes de sensor são desabilitados** no demo.
 
 ---
