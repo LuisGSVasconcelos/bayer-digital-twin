@@ -180,9 +180,12 @@ forte): nessa condição o loop **pausa** (gráficos/log param — espera corret
 
 **Cenário de demonstração:** o dashboard abre com os decantadores **acima do limiar (≈80,5%)**
 — o HITL dispara já no primeiro ciclo (botão Aprovar disponível). Ao aprovar, o controle
-modulante **drena o nível até o setpoint (~65%) e o estabiliza**, demonstrando de ponta a
-ponta HITL + regulação. A simulação roda leve (~60 ms/tick) e os **spikes de sensor são
-desabilitados** no demo para o HITL vir da condição real do nível.
+modulante **drena o nível até o setpoint (~65%) e o mantém lá**. Para permitir que o controle
+**segure** o nível no setpoint dentro do tempo de demonstração, o demo usa **alimentação
+constante** (gerador de distúrbios desligado) — a válvula de drenagem única não consegue
+contrapor o ruído dos distúrbios que puxa o nível para baixo. O conjunto completo de
+distúrbios está ativo no benchmark (`test_adaptive_controller.py`) e no simulador. A simulação
+roda leve (~60 ms/tick) e os **spikes de sensor são desabilitados** no demo.
 
 ---
 

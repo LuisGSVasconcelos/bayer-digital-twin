@@ -10,6 +10,7 @@ agent.VERBOSE = False; sim.VERBOSE = False; afc.VERBOSE = False
 agent.FORCA_CLIMA = "Forte"
 p = agent.planta_bayer
 p.gerador.config["spike_sensor"]["probabilidade"] = 0.0
+p.gerador.ativo = False  # demo: alimentacao constante p/ segurar no setpoint
 p.t_paralelo_a.volume = p.t_paralelo_a.capacidade * 0.805
 p.t_paralelo_b.volume = p.t_paralelo_b.capacidade * 0.803
 agent.fuzzy_ctrl_pa.reset(); agent.fuzzy_ctrl_pb.reset()
@@ -38,7 +39,7 @@ for i in range(400):
 final = p.t_paralelo_a.percentual
 minlvl = min(h[1] for h in hist)
 print(f"FINAL PA={final:.2f}% | minimo observado={minlvl:.2f}%")
-assert minlvl > 45, "FALHA: esvaziou (controle nao deveria drenar abaixo de 45)"
-assert 58 <= final <= 68, f"FALHA: nao assentou perto do setpoint (final={final:.1f})"
+assert minlvl > 63, "FALHA: nivel caiu abaixo do setpoint (nao segurou em 65)"
+assert 62 <= final <= 68, f"FALHA: nao segurou perto do setpoint (final={final:.1f})"
 assert not agent.app.get_state(cfg).next, "FALHA: re-disparou HITL"
-print("PASS: controle regula ate ~setpoint e segura (sem esvaziar, sem re-alarme)")
+print("PASS: controle segura o nivel no setpoint (nao cai abaixo de 65)")

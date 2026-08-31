@@ -29,8 +29,11 @@ if "agente" not in st.session_state:
     #    Aprovar libera a valvula; o controle modulante regula ate o setpoint e segura.
     planta_bayer.t_paralelo_a.volume = planta_bayer.t_paralelo_a.capacidade * 0.805
     planta_bayer.t_paralelo_b.volume = planta_bayer.t_paralelo_b.capacidade * 0.803
-    # demo limpa: desabilita spikes p/ HITL vir da subida REAL; silencia flood de prints
+    # demo limpa: silencia flood de prints; valvula-drenagem unica nao consegue
+    # contrapor o ruido dos disturbios (que puxa o nivel para baixo). Com alimentacao
+    # constante o controle segura o nivel no setpoint. Spikes tambem desabilitados.
     planta_bayer.gerador.config["spike_sensor"]["probabilidade"] = 0.0
+    planta_bayer.gerador.ativo = False
     lga.VERBOSE = False
     sim.VERBOSE = False
     afc.VERBOSE = False
