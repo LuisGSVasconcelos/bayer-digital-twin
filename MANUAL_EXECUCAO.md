@@ -172,11 +172,11 @@ No painel:
 - acompanhe KPIs (níveis, TC, perda de soda) e gráficos (PV × SP × MV, química, distúrbios).
 
 **Comportamento do controle:** o agente atua como **regulador proporcional** das válvulas de
-drenagem — abre conforme o nível fica acima do setpoint (**65%**) e fecha ao se aproximar do
-setpoint. O **HITL** gateia apenas a **emergência** (nível **>80%** ou **>70% com tendência de
-alta** + chuva forte): nessa condição o loop **pausa** (gráficos/log param — espera correta) e
-mostra o botão **Aprovar**. Ao aprovar, o controle traz o nível de volta ao setpoint e o
-**segura** (não drena até esvaziar).
+drenagem — abre conforme o nível fica acima do setpoint (**65%**) e **fecha quando o nível
+chega ao/abaixo do setpoint** (trava de setpoint: **não drena abaixo de 65%**). O **HITL**
+gateia apenas a **emergência** (nível **>80%** ou **>70% com tendência de alta** + chuva
+forte): nessa condição o loop **pausa** (gráficos/log param — espera correta) e mostra o botão
+**Aprovar**. Ao aprovar, o controle traz o nível de volta ao setpoint e o **segura**.
 
 **Cenário de demonstração:** o dashboard abre com os decantadores **acima do limiar (≈80,5%)**
 — o HITL dispara já no primeiro ciclo (botão Aprovar disponível). Ao aprovar, o controle

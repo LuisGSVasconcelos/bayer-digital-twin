@@ -191,15 +191,22 @@ def calcular_controle(state: BayerState) -> Dict:
 
 def executar_controle_fisico(state: BayerState) -> Dict:
     aberturas = state.get("abertura_recomendada", {}) or {}
+    setpoint = state.get("setpoint", 65.0)
+    filtrados = state.get("niveis_filtrados", {}) or {}
     if VERBOSE:
         print("\n⚙️ [AUTOMAÇÃO] Controle modulante das válvulas de drenagem...")
-    # Regulador proporcional: abre a valvula conforme o erro (nivel - setpoint)
-    # e fecha no/nas setpoint. HITL (ramo critico) gateia apenas a emergência.
-    planta_bayer.t_paralelo_a.abertura_valvula = aberturas.get("PA", 0.0)
-    planta_bayer.t_paralelo_b.abertura_valvula = aberturas.get("PB", 0.0)
+    # Regulador proporcional com trava de setpoint: abre a valvula conforme o erro
+    # (nivel acima do setpoint) e FECHA quando o nivel chega ao/abaixo do setpoint
+    # (nao drena abaixo de 65%). HITL (ramo critico) gateia apenas a emergência.
+    mapa = {"PA": planta_bayer.t_paralelo_a, "PB": planta_bayer.t_paralelo_b}
+    for tid, tanque in mapa.items():
+        a = aberturas.get(tid, 0.0)
+        if filtrados.get(tid, 0.0) <= setpoint:
+            a = 0.0  # trava de setpoint: nao permite drenar abaixo
+        tanque.abertura_valvula = a
     if VERBOSE:
-        print(f"  ✅ PA: {aberturas.get('PA', 0.0) * 100:.1f}% "
-              f"| PB: {aberturas.get('PB', 0.0) * 100:.1f}%")
+        print(f"  ✅ PA: {planta_bayer.t_paralelo_a.abertura_valvula * 100:.1f}% "
+              f"| PB: {planta_bayer.t_paralelo_b.abertura_valvula * 100:.1f}%")
     return {}
 
 
