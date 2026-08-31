@@ -25,9 +25,10 @@ SUBSTEPS_PER_TICK = 10  # A) varios ciclos fisicos por tick (relogio acelerado, 
 # Inicializacao do estado da sessao
 if "agente" not in st.session_state:
     st.session_state.planta = planta_bayer
-    # B) cenário demo: decantadores abaixo do limiar (79.8%) — sobe livre até cruzar 80
-    planta_bayer.t_paralelo_a.volume = planta_bayer.t_paralelo_a.capacidade * 0.798
-    planta_bayer.t_paralelo_b.volume = planta_bayer.t_paralelo_b.capacidade * 0.796
+    # B) cenário demo: decantadores ACIMA do limiar (80.5%) -> HITL ja no 1o ciclo.
+    #    Aprovar libera a valvula; o controle modulante regula ate o setpoint e segura.
+    planta_bayer.t_paralelo_a.volume = planta_bayer.t_paralelo_a.capacidade * 0.805
+    planta_bayer.t_paralelo_b.volume = planta_bayer.t_paralelo_b.capacidade * 0.803
     # demo limpa: desabilita spikes p/ HITL vir da subida REAL; silencia flood de prints
     planta_bayer.gerador.config["spike_sensor"]["probabilidade"] = 0.0
     lga.VERBOSE = False

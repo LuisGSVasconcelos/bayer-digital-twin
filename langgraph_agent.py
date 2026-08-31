@@ -191,30 +191,23 @@ def calcular_controle(state: BayerState) -> Dict:
 
 def executar_controle_fisico(state: BayerState) -> Dict:
     aberturas = state.get("abertura_recomendada", {}) or {}
-    criticos = state.get("tanques_criticos", []) or []
     if VERBOSE:
-        print("\n⚙️ [AUTOMAÇÃO] Aplicando ajuste modulante...")
-
-    if "PA" in criticos:
-        planta_bayer.t_paralelo_a.abertura_valvula = aberturas.get("PA", 0.0)
-        if VERBOSE:
-            print(f"  ✅ PA: {aberturas.get('PA', 0.0) * 100:.1f}%")
-    if "PB" in criticos:
-        planta_bayer.t_paralelo_b.abertura_valvula = aberturas.get("PB", 0.0)
-        if VERBOSE:
-            print(f"  ✅ PB: {aberturas.get('PB', 0.0) * 100:.1f}%")
-    if not criticos:
-        planta_bayer.t_paralelo_a.abertura_valvula = 0.0
-        planta_bayer.t_paralelo_b.abertura_valvula = 0.0
-        if VERBOSE:
-            print("  🔒 Válvulas fechadas (estável).")
+        print("\n⚙️ [AUTOMAÇÃO] Controle modulante das válvulas de drenagem...")
+    # Regulador proporcional: abre a valvula conforme o erro (nivel - setpoint)
+    # e fecha no/nas setpoint. HITL (ramo critico) gateia apenas a emergência.
+    planta_bayer.t_paralelo_a.abertura_valvula = aberturas.get("PA", 0.0)
+    planta_bayer.t_paralelo_b.abertura_valvula = aberturas.get("PB", 0.0)
+    if VERBOSE:
+        print(f"  ✅ PA: {aberturas.get('PA', 0.0) * 100:.1f}% "
+              f"| PB: {aberturas.get('PB', 0.0) * 100:.1f}%")
     return {}
 
 
 def rotear_fluxo(state: BayerState) -> str:
+    # Critico + chuva -> HITL; caso contrario vai ao controle modulante (valvulares).
     if state.get("acao_necessaria", False):
         return "aguardar_operador"
-    return END
+    return "executar_controle"
 
 
 # ----------------------------------------------------------------------------
@@ -233,7 +226,7 @@ def build_app():
     builder.add_edge("analise", "calcular_controle")
     builder.add_conditional_edges(
         "calcular_controle", rotear_fluxo,
-        {"aguardar_operador": "aguardar_operador", END: END},
+        {"aguardar_operador": "aguardar_operador", "executar_controle": "executar_controle"},
     )
     builder.add_edge("aguardar_operador", "executar_controle")
     builder.add_edge("executar_controle", END)

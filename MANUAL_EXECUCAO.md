@@ -171,15 +171,18 @@ No painel:
   **✅ Aprovar Ação Emergencial** no painel **HITL**; clique-o para liberar a válvula;
 - acompanhe KPIs (níveis, TC, perda de soda) e gráficos (PV × SP × MV, química, distúrbios).
 
-**Cenário de demonstração (A+B):** o dashboard abre com os decantadores pouco **abaixo do
-limiar crítico (~79,8%)** e chuva simulada. O nível **sobe visivelmente** e, ao atingir o
-estado crítico (**>70% com tendência de alta** ou **>80%**), dispara o **HITL**: o loop **pausa**
-(gráficos e log param de atualizar — comportamento correto de espera) e o botão **Aprovar**
-fica disponível no painel HITL. Aprovar **abre a válvula** e o **nível desce**. Como o tanque
-permanece perto do limiar, o HITL pode **re-disparar** ao voltar a subir — é o gate de
-segurança agindo (cada vez pausa com aprovação clicável, sem travar a interface). A
-simulação roda leve (~60 ms/tick) e os **spikes de sensor são desabilitados** no demo para o
-HITL vir da condição real do nível.
+**Comportamento do controle:** o agente atua como **regulador proporcional** das válvulas de
+drenagem — abre conforme o nível fica acima do setpoint (**65%**) e fecha ao se aproximar do
+setpoint. O **HITL** gateia apenas a **emergência** (nível **>80%** ou **>70% com tendência de
+alta** + chuva forte): nessa condição o loop **pausa** (gráficos/log param — espera correta) e
+mostra o botão **Aprovar**. Ao aprovar, o controle traz o nível de volta ao setpoint e o
+**segura** (não drena até esvaziar).
+
+**Cenário de demonstração:** o dashboard abre com os decantadores **acima do limiar (≈80,5%)**
+— o HITL dispara já no primeiro ciclo (botão Aprovar disponível). Ao aprovar, o controle
+modulante **drena o nível até o setpoint (~65%) e o estabiliza**, demonstrando de ponta a
+ponta HITL + regulação. A simulação roda leve (~60 ms/tick) e os **spikes de sensor são
+desabilitados** no demo para o HITL vir da condição real do nível.
 
 ---
 
