@@ -108,22 +108,32 @@ speed = st.sidebar.slider("Velocidade (ciclos/s)", 1, 20, 5)
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🌤️ Clima (demo)")
+lga.FORCA_INTENSIDADE_MM_S = None  # reseta manual a cada rerun
 cenario = st.sidebar.selectbox(
     "Cenário de clima",
-    ["Forte", "Moderada", "Nenhuma", "Real (API)"],
+    ["Forte", "Moderada", "Nenhuma", "Manual...", "Real (API)"],
     index=0,
-    help="Forte/Moderada forçam chuva simulada (funcionam offline). \"Real\" usa a API OpenWeather.",
+    help="Forte/Moderada forçam chuva fixa; \"Manual...\" ajusta a chuva de forma contínua "
+         "(slider); \"Real\" usa a API OpenWeather.",
 )
-lga.FORCA_CLIMA = None if cenario == "Real (API)" else cenario
-if cenario == "Real (API)":
+if cenario == "Manual...":
+    mm_s = st.sidebar.slider(
+        "Intensidade da chuva (mm/s)", 0.0, 0.30, 0.12, 0.01,
+        help="Chuva contínua: varia suavemente entre 0 e 0,30 mm/s (além dos 3 estados fixos).")
+    lga.FORCA_INTENSIDADE_MM_S = float(mm_s)
+    lga.FORCA_CLIMA = None
+    st.sidebar.caption(f"Chuva: {mm_s:.2f} mm/s")
+elif cenario == "Real (API)":
+    lga.FORCA_CLIMA = None
     try:
-        chuva, desc, alerta = weather_service.get_rain_intensity()
-        st.sidebar.metric("Chuva (API)", f"{chuva} mm/h", delta=desc)
+        mmh, desc, alerta = weather_service.get_rain_intensity()
+        st.sidebar.metric("Chuva (API)", f"{mmh:.1f} mm/h", delta=desc)
     except Exception:
         st.sidebar.error("Clima offline")
 else:
-    mm = {"Forte": 12.0, "Moderada": 0.5, "Nenhuma": 0.0}[cenario]
-    st.sidebar.metric("Chuva (simulada)", f"{mm} mm/h", delta=cenario)
+    lga.FORCA_CLIMA = cenario
+    mm = {"Forte": 0.25, "Moderada": 0.05, "Nenhuma": 0.0}[cenario]
+    st.sidebar.metric("Chuva (simulada)", f"{mm} mm/s", delta=cenario)
 st.sidebar.caption(f"Simulação acelerada: {SUBSTEPS_PER_TICK} ciclos/tick")
 
 # ------------------------------ KPIs ------------------------------
@@ -159,7 +169,7 @@ if not df.empty:
                               line=dict(color="purple")))
     fig2.add_trace(go.Scatter(x=df["timestamp"], y=df["soda_perdida_pa"] + df["soda_perdida_pb"],
                               name="Perda Soda", line=dict(color="red", dash="dot")), secondary_y=True)
-    fig2.add_trace(go.Bar(x=df["timestamp"], y=df["chuva_mm_h"], name="Chuva (mm/h)",
+    fig2.add_trace(go.Bar(x=df["timestamp"], y=df["chuva_mm_h"], name="Chuva (mm/s)",
                           marker_color="blue", opacity=0.3), secondary_y=True)
     fig2.update_layout(title="Química e Distúrbios", height=300)
     st.plotly_chart(fig2, width="stretch")

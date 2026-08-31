@@ -63,6 +63,7 @@ class BayerState(TypedDict):
 
 
 FORCA_CLIMA: str | None = None  # demo offline: "Forte" | "Moderada" | "Nenhuma" | None
+FORCA_INTENSIDADE_MM_S: float | None = None  # chuva CONTINUA (manual, mm/s): sobrepoe tudo
 VERBOSE = True  # False silencia floods de print por ciclo (usado no dashboard)
 
 
@@ -70,17 +71,25 @@ def obter_chuva():
     """Wraper de leitura do clima. Separado para permitir mock em testes.
 
     Se FORCA_CLIMA estiver definido, ignora a API e usa um cenário simulado
-    (útil para demonstração offline, sem chave OpenWeather).
+    (útil para demonstração offline, sem chave OpenWeather). FORCA_INTENSIDADE_MM_S
+    (chuva contínua/manual) tem prioridade sobre o cenário fixo.
     """
+    if FORCA_INTENSIDADE_MM_S is not None:
+        n = float(FORCA_INTENSIDADE_MM_S)
+        rotulo = "Nenhuma" if n <= 0 else ("Moderada" if n < 0.1 else "Forte")
+        return n, f"chuva manual {n:.2f} mm/s", \
+               (f"chuva manual: {n:.2f} mm/s" if n < 0.1 else f"ALERTA: chuva manual {n:.2f} mm/s")
     if FORCA_CLIMA in ("Forte", "Moderada", "Nenhuma"):
         mapa = {
-            "Forte": (12.0, "chuva forte (simulada)", "ALERTA: chuva forte simulada"),
-            "Moderada": (0.5, "chuva moderada (simulada)", "chuva moderada simulada"),
+            "Forte": (0.25, "chuva forte (simulada)", "ALERTA: chuva forte simulada"),
+            "Moderada": (0.05, "chuva moderada (simulada)", "chuva moderada simulada"),
             "Nenhuma": (0.0, "tempo seco (simulado)", "sem chuva (simulada)"),
         }
         return mapa[FORCA_CLIMA]
     try:
-        return weather_service.get_rain_intensity()
+        # API devolve mm/h; converte para mm/s usada pelo simulador
+        mmh, desc, alerta = weather_service.get_rain_intensity()
+        return mmh / 3600.0, desc, alerta
     except Exception:
         return 0.0, "indisponível", "⚠️ Falha na consulta"
 
@@ -100,18 +109,19 @@ def atualizar_ema_e_tendencia(nivel_bruto: float, ema_anterior) -> tuple:
 # Nos do grafo
 # ----------------------------------------------------------------------------
 def ler_sensores_planta(state: BayerState) -> Dict:
-    intensidade, desc, alerta = obter_chuva()
+    intensidade, desc, alerta = obter_chuva()   # intensidade em mm/s (simulador)
     if VERBOSE:
-        print(f"\n🌦️ Chuva: {intensidade} mm/h | {desc}")
+        print(f"\n🌦️ Chuva: {intensidade:.3f} mm/s | {desc}")
 
-    if intensidade == 0:
+    if intensidade <= 0:
         clima = "Nenhuma"
-    elif intensidade < 1.0:
+    elif intensidade < 0.1:
         clima = "Moderada"
     else:
         clima = "Forte"
 
-    planta_bayer.rodar_ciclo_fisica(clima)
+    # passa o valor numerico (mm/s) ao simulador -> chuva CONTINUA (manual/slider)
+    planta_bayer.rodar_ciclo_fisica(intensidade)
     niveis = planta_bayer.obter_status_sensores()
 
     nivel_pa_bruto = planta_bayer.gerador.aplicar_spike_sensor(niveis["PA"])

@@ -269,11 +269,14 @@ class PlantaBayerSimulada:
         self.disturbio_alimentacao_adicional = 0.0
         self.vazao_diluicao_tc = 0.0
 
-    def rodar_ciclo_fisica(self, intensidade_chuva: str):
+    def rodar_ciclo_fisica(self, intensidade_chuva):
         fator_divisao, teor_sio2 = self.gerador.aplicar_disturbios(self)
 
-        conversoes = {"Nenhuma": 0.0, "Moderada": 0.05, "Forte": 0.25}
-        chuva_mm_s = conversoes.get(intensidade_chuva, 0.0)
+        if isinstance(intensidade_chuva, (int, float)):
+            chuva_mm_s = float(intensidade_chuva)   # chuva CONTINUA (manual)
+        else:
+            conversoes = {"Nenhuma": 0.0, "Moderada": 0.05, "Forte": 0.25}
+            chuva_mm_s = conversoes.get(str(intensidade_chuva), 0.0)
 
         carga_base = 22.0
         carga_inicial = max(5.0, carga_base + self.disturbio_alimentacao_adicional)

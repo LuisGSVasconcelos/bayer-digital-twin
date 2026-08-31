@@ -166,7 +166,8 @@ Abra no navegador: **http://localhost:8501**
 No painel:
 - clique **Iniciar** para rodar a simulação e **Parar** para pausar;
 - ajuste a **velocidade** (ciclos/s) — a simulação roda acelerada (vários ciclos/tick);
-- no seletor **Cenário de clima**, force chuva (**Forte/Moderada**, funciona offline) ou use a **API** real;
+- no seletor **Cenário de clima**, force chuva fixa (**Forte/Moderada/Nenhuma**), ajuste a
+  **chuva de forma contínua** com o **slider "Manual..."** (0–0,30 mm/s), ou use a **API** real;
 - quando o alerta de HITL aparecer, o loop **pausa** (não congela) e abre o botão
   **✅ Aprovar Ação Emergencial** no painel **HITL**; clique-o para liberar a válvula;
 - acompanhe KPIs (níveis, TC, perda de soda) e gráficos (PV × SP × MV, química, distúrbios).
