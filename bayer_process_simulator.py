@@ -83,7 +83,7 @@ class DecantadorIndustrial(TanqueIndustrial):
         vazao_massica_entrada = vazao_entrada * 1.2
         vazao_solidos_entrada = vazao_massica_entrada * self.teor_solidos_alimentacao
 
-        fator_sio2 = teor_sio2 * 0.12
+        fator_sio2 = teor_sio2 * 0.008
         perda_quimica_kg_s = vazao_solidos_entrada * fator_sio2
 
         vazao_solidos_saida = vazao_solidos_entrada
@@ -101,8 +101,10 @@ class DecantadorIndustrial(TanqueIndustrial):
         self.vazao_lama = licor_preso_l_s + (vazao_solidos_saida / 1.5)
 
         soda_entrada_kg_s = (vazao_licor_entrada * tc_entrada) / 1000.0
-        soda_restante_kg_s = soda_entrada_kg_s - self.soda_perdida_lama
-        self.massa_caustica += soda_restante_kg_s * 1.0
+        # Conservacao de caustica: sai no licor CLARIFICADO (produto, no TC do tanque)
+        # e na lama. Estabiliza o TC (nao sobe/desce sem fim).
+        soda_clarificado_kg_s = (self.vazao_licor_clarificado * self.tc) / 1000.0
+        self.massa_caustica += (soda_entrada_kg_s - soda_clarificado_kg_s - self.soda_perdida_lama)
 
         # Correcao: a culvula de drenagem (abertura_valvula) conta no balanco
         # de volume do decantador. Sem isso, a variavel manipulada nao tem

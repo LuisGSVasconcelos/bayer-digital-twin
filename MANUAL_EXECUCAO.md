@@ -182,8 +182,9 @@ chuva): nessa condição o loop **pausa** (gráficos/log param — espera corret
 **Balanço do decantador:** corrigido para que a **chuva e a alimentação afetem o nível** — o
 licor clarificado sai apenas o licor **separado** (sem a chuva); a chuva **acumula** no
 decantador e eleva o nível. O controle então **abre a válvula proporcionalmente à chuva** para
-manter os 65%. No modelo antigo, a chuva saía toda pelo clarificado e o nível ficava insensível
-a ela (balanço incorreto, agora corrigido).
+manter os 65%. O balanço também **conserva a caustica** (a soda que sai no licor clarificado é
+abatida da massa), de modo que o **TC estabiliza** perto do valor de entrada, com uma perda
+química de sílica **realista** (pequena).
 
 **Cenário de demonstração:** o dashboard abre com os decantadores **acima do limiar (≈80,5%)**
 — o HITL dispara já no primeiro ciclo (botão Aprovar disponível). Ao aprovar, a ação é
