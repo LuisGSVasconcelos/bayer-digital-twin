@@ -165,9 +165,17 @@ Abra no navegador: **http://localhost:8501**
 
 No painel:
 - clique **Iniciar** para rodar a simulação e **Parar** para pausar;
-- ajuste a **velocidade** (ciclos/s);
+- ajuste a **velocidade** (ciclos/s) — a simulação roda acelerada (vários ciclos/tick);
+- no seletor **Cenário de clima**, force chuva (**Forte/Moderada**, funciona offline) ou use a **API** real;
 - quando o alerta de HITL surgir, clique **Aprovar Ação Emergencial** para liberar a válvula;
 - acompanhe KPIs (níveis, TC, perda de soda) e gráficos (PV × SP × MV, química, distúrbios).
+
+**Cenário de demonstração (A+B):** o dashboard abre com os decantadores acima do limiar
+crítico (80%) e chuva simulada forte. Assim o HITL dispara já no primeiro ciclo; aprovar
+abre a válvula e o nível desce visivelmente. Isso ocorre porque, no modelo, a variação de
+nível dos decantadores é intrinsecamente lenta (balanço quase em estado estacionário — a
+chuva entra e sai pelo licor clarificado). Para mostrar o controle agindo rapidamente,
+aceleramos o relógio e partimos de um ponto próximo do crítico.
 
 ---
 
