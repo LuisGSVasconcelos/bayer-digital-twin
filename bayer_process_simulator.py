@@ -163,6 +163,14 @@ class GeradorDisturbios:
 
         self.tempo_simulacao += 1
 
+        # Modo "só-quimica": aplica apenas disturbios de QUIMICA (silica e diluicao do TC),
+        # que NAO afetam o nivel — permitem perda de soda e TC variarem com alimentacao
+        # constante (nivel segura no setpoint no demo).
+        if self.config.get("only_chemistry", False):
+            self._disturbio_diluicao_tc(planta)
+            sio2 = self._disturbio_silica()
+            return 0.5, sio2
+
         self._disturbio_alimentacao(planta)
         self._disturbio_desgaste_bomba(planta)
         self._disturbio_stiction(planta)

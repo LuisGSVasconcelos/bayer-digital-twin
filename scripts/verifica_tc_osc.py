@@ -9,7 +9,8 @@ import adaptive_fuzzy_controller as afc
 agent.VERBOSE = False; sim.VERBOSE = False; afc.VERBOSE = False
 agent.FORCA_CLIMA = "Forte"
 p = agent.planta_bayer
-p.gerador.ativo = False
+p.gerador.ativo = True               # demo: so-quimica (silica/diluicao TC) -> soda varia
+p.gerador.config["only_chemistry"] = True
 p.gerador.config["spike_sensor"]["probabilidade"] = 0.0
 p.t_paralelo_a.volume = p.t_paralelo_a.capacidade * 0.805
 p.t_paralelo_b.volume = p.t_paralelo_b.capacidade * 0.70
@@ -36,6 +37,8 @@ s = vals[-2000:]
 t_set = sum(1 for a, b in zip(s, s[1:]) if (a < 0.2) != (b < 0.2))
 print(f"válvula alcada: (todo) transicoes={t_all}/{len(vals)} | regime(2000) min={min(s):.2f} max={max(s):.2f} transicoes={t_set}")
 print(f"TC inicio={tcs[1000]:.2f} meio={tcs[3000]:.2f} fim={tcs[-1]:.2f}")
-print(f"soda perda: inicio={sodas[1000]:.3f} fim={sodas[-1]:.3f}")
+print(f"soda perda: inicio={sodas[1000]:.3f} fim={sodas[-1]:.3f} "
+      f"range(ult.1000)=({min(sodas[-1000:]):.3f},{max(sodas[-1000:]):.3f})")
 dlta = tcs[-1] - tcs[5000]
-print("TC variacao nos ultimos 1000 ciclos:", round(dlta, 3), "(estavel se ~0)")
+tc_last1000 = tcs[-1000:]
+print(f"TC variacao ult.1000: variou {max(tc_last1000)-min(tc_last1000):.2f} (range amplo = dinamico/varia)")

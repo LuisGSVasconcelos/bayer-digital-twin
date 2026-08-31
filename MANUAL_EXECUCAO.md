@@ -190,10 +190,11 @@ química de sílica **realista** (pequena).
 — o HITL dispara já no primeiro ciclo (botão Aprovar disponível). Ao aprovar, a ação é
 **travada**: a válvula continua drenando **sem re-pedir aprovação a cada ciclo** até o nível
 sair do estado crítico, chegando ao setpoint (**~65%**) e se mantendo lá (a válvula mantém uma
-abertura para compensar a chuva). Para o nível segurar de forma estável na demonstração, o demo
-usa **alimentação constante** (gerador de distúrbios desligado); o conjunto completo de
-distúrbios fica ativo no benchmark (`test_adaptive_controller.py`) e no simulador. A simulação
-roda leve (~60 ms/tick) e os **spikes de sensor são desabilitados** no demo.
+abertura para compensar a chuva). O demo ativa apenas os **distúrbios de química** (sílica e
+diluição de TC), de modo que a **perda de soda e o TC variam** com a alimentação constante —
+que, por sua vez, mantém o **nível estável no setpoint**. O conjunto completo de distúrbios
+fica ativo no benchmark (`test_adaptive_controller.py`) e no simulador. A simulação roda leve
+(~60 ms/tick) e os **spikes de sensor são desabilitados** no demo.
 
 ---
 
