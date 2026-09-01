@@ -165,7 +165,8 @@ Abra no navegador: **http://localhost:8501**
 
 No painel:
 - clique **Iniciar** para rodar a simulação e **Parar** para pausar;
-- ajuste a **velocidade** (ciclos/s) — a simulação roda acelerada (vários ciclos/tick);
+- ajuste o **movimento** (ciclos por atualização) — a página usa **renderização por fragmento**,
+  atualizando só os gráficos/status a cada ~0,4 s sem piscar a página inteira;
 - no seletor **Cenário de clima**, force chuva fixa (**Forte/Moderada/Nenhuma**), ajuste a
   **chuva de forma contínua** com o **slider "Manual..."** (0–0,30 mm/s), ou use a **API** real;
 - no seletor **🎛️ Controlador**, escolha a **estratégia de controle**: **PI (drenagem + makeup)**

@@ -57,7 +57,7 @@ def executar_ciclo():
 
         snap = None
         alerta = "Normal"
-        for _ in range(SUBSTEPS_PER_TICK):
+        for _ in range(st.session_state.get("ciclos_render", SUBSTEPS_PER_TICK)):
             for _ev in st.session_state.agente.stream(
                     st.session_state.estado_atual, st.session_state.config_agente):
                 pass
@@ -104,7 +104,8 @@ if st.sidebar.button("▶️ Iniciar"):
     st.session_state.executando = True
 if st.sidebar.button("⏹️ Parar"):
     st.session_state.executando = False
-speed = st.sidebar.slider("Velocidade (ciclos/s)", 1, 12, 3)
+ciclos_render = st.sidebar.slider("Ciclos por atualização (movimento)", 5, 40, 14)
+st.session_state.ciclos_render = ciclos_render
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🌤️ Clima (demo)")
@@ -186,84 +187,92 @@ if manual_val:
             pass
         st.session_state.executando = True
 
-# ------------------------------ KPIs ------------------------------
+# ------------------------------ CORPO AO VIVO (fragmento) ------------------------------
 st.title("🏭 Digital Twin - Processo Bayer")
-df = st.session_state.historico
 
-# HITL proeminente no corpo: quando ha aprovacao pendente, mostra banner + botao grande
-try:
-    _snap_h = st.session_state.agente.get_state(st.session_state.config_agente)
-    if _snap_h and _snap_h.next:
-        st.error("⚠️ **Ação Emergencial pendente de aprovação humana** — o loop pausou "
-                 "automaticamente (não é travamento). Aprove para liberar a ação.")
-        _aprov = st.button("✅ Aprovar Ação Emergencial (libera o loop)", type="primary")
-        if _aprov:
-            st.session_state.agente.update_state(
-                st.session_state.config_agente, {"emergencia_aprovada": True},
-                as_node="aguardar_operador")
-            for _ in st.session_state.agente.stream(None, st.session_state.config_agente):
-                pass
-            st.session_state.executando = True
-except Exception:
-    pass
 
-if not df.empty:
-    ultimo = df.iloc[-1]
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("📊 Nível PA", f"{ultimo['nivel_PA']:.2f}%",
-              "Crítico!" if ultimo["nivel_PA"] > 80 else "OK")
-    c2.metric("📊 Nível PB", f"{ultimo['nivel_PB']:.2f}%")
-    c3.metric("🧪 TC Saída", f"{ultimo['tc_saida']:.1f} g/L")
-    c4.metric("💧 Perda Soda", f"{ultimo['soda_perdida_pa'] + ultimo['soda_perdida_pb']:.2f} kg/s")
+@st.fragment(run_every=0.4)
+def ao_vivo():
+    """Atualizacao suave: so este bloco (KPIs+graficos+status+HITL) repinta a cada ~0,4s,
+    sem re-renderizar a pagina inteira (evita o flicker de graficos e da msg de status)."""
+    S = st.session_state
 
-    fig1 = make_subplots(specs=[[{"secondary_y": True}]])
-    fig1.add_trace(go.Scatter(x=df["timestamp"], y=df["nivel_PA"], name="Nível PA", line=dict(color="red")))
-    fig1.add_trace(go.Scatter(x=df["timestamp"], y=df["nivel_PB"], name="Nível PB", line=dict(color="orange")))
-    fig1.add_trace(go.Scatter(x=df["timestamp"], y=[SETPOINT] * len(df), name="Setpoint",
-                              line=dict(color="green", dash="dash")))
-    fig1.add_trace(go.Bar(x=df["timestamp"], y=df["abertura_PA"], name="Abertura PA (dreno)",
-                          marker_color="orange", opacity=0.5), secondary_y=True)
-    fig1.add_trace(go.Bar(x=df["timestamp"], y=df["abertura_PB"], name="Abertura PB (dreno)",
-                          marker_color="teal", opacity=0.4), secondary_y=True)
-    fig1.add_trace(go.Scatter(x=df["timestamp"], y=df["makeup_PA"], name="Makeup PA",
-                              line=dict(color="green", dash="dot")), secondary_y=True)
-    fig1.add_trace(go.Scatter(x=df["timestamp"], y=df["makeup_PB"], name="Makeup PB",
-                              line=dict(color="lime", dash="dashdot")), secondary_y=True)
-    fig1.update_layout(title="Controle de Nível (PV x SP x MV)", height=300, hovermode="x unified",
-                       legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0))
-    fig1.update_yaxes(title_text="Nível (%)", secondary_y=False)
-    fig1.update_yaxes(title_text="Abertura (%)", secondary_y=True, range=[0, 100])
-    st.plotly_chart(fig1, width="stretch", config={"displayModeBar": False})
+    # Se estiver executando, avanca a simulacao (varios ciclos) e coleta o alerta.
+    alerta_ultimo = "Normal"
+    if S.executando:
+        alerta_ultimo = executar_ciclo()
+        if "Humana" in alerta_ultimo:
+            S.executando = False  # pausa e espera aprovacao (banner abaixo)
 
-    fig2 = make_subplots(specs=[[{"secondary_y": True}]])
-    fig2.add_trace(go.Scatter(x=df["timestamp"], y=df["tc_saida"], name="TC (g/L)",
-                              line=dict(color="purple")))
-    fig2.add_trace(go.Scatter(x=df["timestamp"], y=df["soda_perdida_pa"] + df["soda_perdida_pb"],
-                              name="Perda Soda", line=dict(color="red", dash="dot")), secondary_y=True)
-    fig2.add_trace(go.Bar(x=df["timestamp"], y=df["chuva_mm_h"], name="Chuva (mm/s)",
-                          marker_color="blue", opacity=0.3), secondary_y=True)
-    fig2.update_layout(title="Química e Distúrbios", height=300)
-    st.plotly_chart(fig2, width="stretch", config={"displayModeBar": False})
+    df = S.historico
+    snap = S.agente.get_state(S.config_agente)
+    hitl_pendente = bool(snap and snap.next)
 
-    with st.expander("📋 Log de Eventos"):
-        st.dataframe(df.tail(10)[["timestamp", "alerta_agente", "nivel_PA", "tc_saida"]])
-else:
-    st.warning("Aguardando dados. Clique em Iniciar.")
-
-# ------------------------------ LOOP ------------------------------
-status_placeholder = st.sidebar.empty()
-if st.session_state.executando:
-    alerta = executar_ciclo()
-    if "Humana" in alerta:
-        # HITL: PAUSA o loop (sem rerun) p/ deixar o bloco HITL renderizar o botao de aprovar.
-        st.session_state.executando = False
-        status_placeholder.warning("⏸️ HITL: aguardando aprovação. Aprove no painel HITL ao lado.")
+    # Status (msg nao pisca mais: senao so no fragmento, em cadencia calma)
+    if S.executando:
+        st.success("🟢 **Executando** — atualização a cada ~0,4 s")
+    elif hitl_pendente:
+        st.info("⏸️ **HITL: aguardando aprovação** (banner/botão abaixo)")
     else:
-        status_placeholder.success("🟢 Executando...")
-        time.sleep(1.0 / speed)
-        st.rerun()
-else:
-    status_placeholder.info("⏹️ Pausado")
+        st.info("⏹️ Pausado")
+
+    # HITL em destaque no corpo
+    if hitl_pendente:
+        st.error("⚠️ **Ação Emergencial pendente de aprovação humana** — o loop pausou "
+                 "(não é travamento). Aprove para liberar a ação.")
+        if st.button("✅ Aprovar Ação Emergencial (libera o loop)", type="primary"):
+            S.agente.update_state(S.config_agente, {"emergencia_aprovada": True},
+                                  as_node="aguardar_operador")
+            for _ in S.agente.stream(None, S.config_agente):
+                pass
+            S.executando = True
+
+    if not df.empty:
+        ultimo = df.iloc[-1]
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("📊 Nível PA", f"{ultimo['nivel_PA']:.2f}%",
+                  "Crítico!" if ultimo["nivel_PA"] > 80 else "OK")
+        c2.metric("📊 Nível PB", f"{ultimo['nivel_PB']:.2f}%")
+        c3.metric("🧪 TC Saída", f"{ultimo['tc_saida']:.1f} g/L")
+        c4.metric("💧 Perda Soda",
+                  f"{ultimo['soda_perdida_pa'] + ultimo['soda_perdida_pb']:.2f} kg/s")
+
+        fig1 = make_subplots(specs=[[{"secondary_y": True}]])
+        fig1.add_trace(go.Scatter(x=df["timestamp"], y=df["nivel_PA"], name="Nível PA", line=dict(color="red")))
+        fig1.add_trace(go.Scatter(x=df["timestamp"], y=df["nivel_PB"], name="Nível PB", line=dict(color="orange")))
+        fig1.add_trace(go.Scatter(x=df["timestamp"], y=[SETPOINT] * len(df), name="Setpoint",
+                                  line=dict(color="green", dash="dash")))
+        fig1.add_trace(go.Bar(x=df["timestamp"], y=df["abertura_PA"], name="Abertura PA (dreno)",
+                              marker_color="orange", opacity=0.5), secondary_y=True)
+        fig1.add_trace(go.Bar(x=df["timestamp"], y=df["abertura_PB"], name="Abertura PB (dreno)",
+                              marker_color="teal", opacity=0.4), secondary_y=True)
+        fig1.add_trace(go.Scatter(x=df["timestamp"], y=df["makeup_PA"], name="Makeup PA",
+                                  line=dict(color="green", dash="dot")), secondary_y=True)
+        fig1.add_trace(go.Scatter(x=df["timestamp"], y=df["makeup_PB"], name="Makeup PB",
+                                  line=dict(color="lime", dash="dashdot")), secondary_y=True)
+        fig1.update_layout(title="Controle de Nível (PV x SP x MV)", height=300, hovermode="x unified",
+                           legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0))
+        fig1.update_yaxes(title_text="Nível (%)", secondary_y=False)
+        fig1.update_yaxes(title_text="Abertura (%)", secondary_y=True, range=[0, 100])
+        st.plotly_chart(fig1, width="stretch", config={"displayModeBar": False})
+
+        fig2 = make_subplots(specs=[[{"secondary_y": True}]])
+        fig2.add_trace(go.Scatter(x=df["timestamp"], y=df["tc_saida"], name="TC (g/L)",
+                                  line=dict(color="purple")))
+        fig2.add_trace(go.Scatter(x=df["timestamp"], y=df["soda_perdida_pa"] + df["soda_perdida_pb"],
+                                  name="Perda Soda", line=dict(color="red", dash="dot")), secondary_y=True)
+        fig2.add_trace(go.Bar(x=df["timestamp"], y=df["chuva_mm_h"], name="Chuva (mm/s)",
+                              marker_color="blue", opacity=0.3), secondary_y=True)
+        fig2.update_layout(title="Química e Distúrbios", height=300)
+        st.plotly_chart(fig2, width="stretch", config={"displayModeBar": False})
+
+        with st.expander("📋 Log de Eventos"):
+            st.dataframe(df.tail(10)[["timestamp", "alerta_agente", "nivel_PA", "tc_saida"]])
+    else:
+        st.warning("Aguardando dados. Clique em Iniciar.")
+
+
+ao_vivo()
 
 # ------------------------------ HITL ------------------------------
 st.sidebar.markdown("---")
