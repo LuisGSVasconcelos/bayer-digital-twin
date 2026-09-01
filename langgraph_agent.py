@@ -206,38 +206,48 @@ def executar_controle_fisico(state: BayerState) -> Dict:
     setpoint = state.get("setpoint", 65.0)
     filtrados = state.get("niveis_filtrados", {}) or {}
     if VERBOSE:
-        print("\n⚙️ [AUTOMAÇÃO] Controle PI suave das válvulas de drenagem...")
-    # Regulador PI SEM zerar a integral: a valvula mantem a abertura de regime que
-    # equilibra a chuva/alimentacao, modulando suave (nao fecha em 0 nem pula 100).
-    # Anti-windup: para de integrar quando a valvula satura (1.0 ou 0.0).
-    BANDA_PROP = 20.0
-    KI = 0.01
+        print("\n⚙️ [AUTOMAÇÃO] Controle PI bidirecional (drenagem + makeup)...")
+    # Regulador PI BIDIRECIONAL:
+    #  - acima do setpoint -> abre a DRENAGEM (remove volume);
+    #  - abaixo do setpoint -> abre o MAKEUP (injeta volume, agua de reposicao).
+    # Isso corrige a queda do nivel que a valvula so-drenagem nao conseguia repor
+    # (segura o setpoint mesmo sem chuva). Integrais separadas por sentido + anti-windup.
+    BANDA_PROP = 20.0    # banda da drenagem (pt)
+    BANDA_MAKEUP = 15.0  # banda do makeup (pt)
+    KI = 0.008
     mapa = {"PA": planta_bayer.t_paralelo_a, "PB": planta_bayer.t_paralelo_b}
     for tid, tanque in mapa.items():
         nivel = filtrados.get(tid, setpoint)
         erro = nivel - setpoint
-        integ = getattr(tanque, "_integ", 0.0)
-
-        # Anti-overshoot: ao chegar no setpoint vindo de cima (descida brusca), zera a
-        # integral. Senao a integral acumulada na descida mantém a valvula aberta e o
-        # nivel drena alem do setpoint (fica ~60 sem chuva p/ repor).
+        i_d = getattr(tanque, "_integ", 0.0)       # integral da drenagem (0..1)
+        i_m = getattr(tanque, "_integ_mk", 0.0)    # integral do makeup (0..1)
         prev = getattr(tanque, "_prev_erro", 0.0)
-        if prev > 3.0 and erro < 2.0:
-            integ = 0.0
-            tanque._integ = 0.0
 
-        if erro < 0.0:
-            # fora do setpoint (nivel baixo): nao sobe a integral, decai rapido p/ nao
-            # drenar demais abaixo; valvula segue suave (sem snap que causa bang)
-            integ = integ * 0.85
-        elif not (erro / BANDA_PROP + integ >= 1.0):
-            integ = max(0.0, min(1.0, integ + KI * erro))   # anti-windup alto
-        tanque._integ = integ
+        # anti-overshoot: zerar a integral da drenagem ao chegar no setpoint vindo de cima
+        if prev > 3.0 and erro < 2.0:
+            i_d = 0.0
+
+        if erro > 0.0:
+            if not (erro / BANDA_PROP + i_d >= 1.0):
+                i_d = min(1.0, i_d + KI * erro)    # integra p/ drenar (anti-windup alto)
+            i_m = i_m * 0.9                        # decai o makeup
+        elif erro < 0.0:
+            if not ((-erro) / BANDA_MAKEUP + i_m >= 1.0):
+                i_m = min(1.0, i_m + KI * (-erro)) # integra p/ repor (anti-windup alto)
+            i_d = i_d * 0.9                        # decai a drenagem
+        else:  # no setpoint: decai ambos
+            i_d = i_d * 0.9
+            i_m = i_m * 0.9
+
+        tanque._integ = i_d
+        tanque._integ_mk = i_m
         tanque._prev_erro = erro
-        tanque.abertura_valvula = max(0.0, min(1.0, erro / BANDA_PROP + integ))
+        tanque.abertura_valvula = max(0.0, min(1.0, erro / BANDA_PROP + i_d))
+        tanque.abertura_makeup = max(0.0, min(1.0, (-erro) / BANDA_MAKEUP + i_m))
     if VERBOSE:
-        print(f"  ✅ PA: {planta_bayer.t_paralelo_a.abertura_valvula * 100:.1f}% "
-              f"| PB: {planta_bayer.t_paralelo_b.abertura_valvula * 100:.1f}%")
+        print(f"  ✅ PA: drenagem {planta_bayer.t_paralelo_a.abertura_valvula * 100:.0f}% "
+              f"makeup {planta_bayer.t_paralelo_a.abertura_makeup * 100:.0f}% | "
+              f"PB: {planta_bayer.t_paralelo_b.abertura_valvula * 100:.0f}% pronto.")
     # Libera a aprovacao de emergencia quando o nivel ja nao e critico
     # (aprovacao unica vale ate o nivel sair do critico; sem re-HITL por ciclo).
     if not criticos:

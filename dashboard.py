@@ -43,7 +43,7 @@ if "agente" not in st.session_state:
     st.session_state.executando = False
     st.session_state.historico = pd.DataFrame(columns=[
         "timestamp", "nivel_PA", "nivel_PB", "nivel_S1", "nivel_S2",
-        "abertura_PA", "abertura_PB", "tc_saida", "soda_perdida_pa", "soda_perdida_pb",
+        "abertura_PA", "abertura_PB", "makeup_PA", "makeup_PB", "tc_saida", "soda_perdida_pa", "soda_perdida_pb",
         "chuva_mm_h", "vazao_diluicao", "teor_sio2", "alerta_agente",
     ])
 
@@ -76,6 +76,8 @@ def executar_ciclo():
             "nivel_S2": planta.t_serie2.percentual,
             "abertura_PA": planta.t_paralelo_a.abertura_valvula * 100,
             "abertura_PB": planta.t_paralelo_b.abertura_valvula * 100,
+            "makeup_PA": planta.t_paralelo_a.abertura_makeup * 100,
+            "makeup_PB": planta.t_paralelo_b.abertura_makeup * 100,
             "tc_saida": dados.get("tc_saida_decantadores", 0),
             "soda_perdida_pa": (dados.get("soda_perdida", {}) or {}).get("PA", 0),
             "soda_perdida_pb": (dados.get("soda_perdida", {}) or {}).get("PB", 0),
@@ -169,10 +171,14 @@ if not df.empty:
     fig1.add_trace(go.Scatter(x=df["timestamp"], y=df["nivel_PB"], name="Nível PB", line=dict(color="orange")))
     fig1.add_trace(go.Scatter(x=df["timestamp"], y=[SETPOINT] * len(df), name="Setpoint",
                               line=dict(color="green", dash="dash")))
-    fig1.add_trace(go.Bar(x=df["timestamp"], y=df["abertura_PA"], name="Abertura PA",
+    fig1.add_trace(go.Bar(x=df["timestamp"], y=df["abertura_PA"], name="Abertura PA (dreno)",
                           marker_color="orange", opacity=0.5), secondary_y=True)
-    fig1.add_trace(go.Bar(x=df["timestamp"], y=df["abertura_PB"], name="Abertura PB",
+    fig1.add_trace(go.Bar(x=df["timestamp"], y=df["abertura_PB"], name="Abertura PB (dreno)",
                           marker_color="teal", opacity=0.4), secondary_y=True)
+    fig1.add_trace(go.Scatter(x=df["timestamp"], y=df["makeup_PA"], name="Makeup PA",
+                              line=dict(color="green", dash="dot")), secondary_y=True)
+    fig1.add_trace(go.Scatter(x=df["timestamp"], y=df["makeup_PB"], name="Makeup PB",
+                              line=dict(color="lime", dash="dashdot")), secondary_y=True)
     fig1.update_layout(title="Controle de Nível (PV x SP x MV)", height=300, hovermode="x unified",
                        legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0))
     fig1.update_yaxes(title_text="Nível (%)", secondary_y=False)

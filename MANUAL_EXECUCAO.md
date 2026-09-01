@@ -175,10 +175,12 @@ No painel:
   de sensor) — **todos ficam ativos por padrão**, mas você pode desativar os que quiser;
 - acompanhe KPIs (níveis, TC, perda de soda) e gráficos (PV × SP × MV, química, distúrbios).
 
-**Comportamento do controle:** o agente atua como **regulador PI suave** (proporcional +
-integral) das válvulas de drenagem — a abertura **modula gradualmente** (banda ~20 pt) e a
-integral **mantém a abertura de regime** que equilibra a chuva/alimentação, **sem oscilar
-0–100%** e mantendo o nível no setpoint (**65%**, sem drenar abaixo).
+**Comportamento do controle:** o agente atua como **regulador PI bidirecional**: quando o nível
+fica **acima** do setpoint (**65%**) abre a válvula de **drenagem**; quando fica **abaixo**, abre
+a **água de reposição (makeup)**, que injeta fluxo e repõe o nível. Isso **corrige** o problema
+do atuador só-drenagem (que não conseguia levantar o nível) — o setpoint é **sustentado mesmo
+sem chuva**. A modulação é **suave** (bandas proporcionais + integrais por sentido, com
+anti-windup), sem oscilar 0–100%.
 O **HITL** gateia apenas a **emergência** (nível **>80%** ou **>70% com tendência de alta** +
 chuva): nessa condição o loop **pausa** (gráficos/log param — espera correta) e mostra o botão
 **Aprovar**. Ao aprovar (uma vez), o controle traz o nível de volta ao setpoint e o **segura**.
@@ -190,12 +192,10 @@ manter os 65%. O balanço também **conserva a caustica** (a soda que sai no lic
 abatida da massa), de modo que o **TC estabiliza** perto do valor de entrada, com uma perda
 química de sílica **realista** (pequena).
 
-> **Nota (chuva × nível):** a válvula de drenagem é **unidirecional** (só remove). Para o nível
-> **sustentar no setpoint** o demo precisa de **chuva ativa** (padrão **Forte**). Se você
-> escolher **"Nenhuma"** ou **"Manual"** com valor baixo, o nível **segue a alimentação** e pode
-> cair aos poucos (os distúrbios que reduzem a vazão, como a variação de alimentação e o
-> desgaste da bomba, não podem ser repostos pela válvula) — comportamento físico de um atuador
-> só-drenagem, não um bug. Para a demonstração de "segurar no setpoint", mantenha a chuva ativa.
+> **Nota (makeup × nível):** o controle é **bidirecional** — acima do setpoint usa a drenagem,
+> abaixo usa a **água de reposição (makeup)**, que injeta volume e **sustenta o nível mesmo sem
+> chuva**. Por isso o setpoint é mantido em qualquer condição de chuva (Forte, Moderada,
+> Nenhuma ou Manual). O makeup aparece no gráfico de controle como linha verde (MV).
 
 **Cenário de demonstração:** o dashboard abre com os decantadores **acima do limiar (≈80,5%)**
 — o HITL dispara já no primeiro ciclo (botão Aprovar disponível). Ao aprovar, a ação é

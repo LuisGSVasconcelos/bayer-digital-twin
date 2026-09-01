@@ -76,6 +76,12 @@ class DecantadorIndustrial(TanqueIndustrial):
         self.vazao_lama = 0.0
         self.vazao_licor_clarificado = 0.0
         self.tc_licor_saida = 0.0
+        # Atuador de ENTRADA (makeup/agua de reposicao) - controles bidirecional do nivel.
+        # Abre quando o nivel esta ABAIXO do setpoint, injetando volume (corrige a queda
+        # que a valvula de drenagem, so-remocao, nao consegue). Agua fresca (dilui TC).
+        self.vazao_makeup_maxima = 40.0   # L/s
+        self.abertura_makeup = 0.0
+        self.vazao_makeup = 0.0
 
     def atualizar_volume_e_separar(self, vazao_entrada: float, chuva_mm_s: float,
                                    tc_entrada: float, teor_sio2: float = 5.0) -> float:
@@ -110,8 +116,10 @@ class DecantadorIndustrial(TanqueIndustrial):
         # de volume do decantador. Sem isso, a variavel manipulada nao tem
         # efeito no nivel controlado (o loop de controle era inocuo).
         vazao_drenagem = self.vazao_drenagem_maxima * self.abertura_valvula
+        vazao_makeup = self.vazao_makeup_maxima * self.abertura_makeup
+        self.vazao_makeup = vazao_makeup
 
-        variacao_volume = (vazao_entrada + agua_chuva
+        variacao_volume = (vazao_entrada + agua_chuva + vazao_makeup
                            - (self.vazao_licor_clarificado + self.vazao_lama + vazao_drenagem))
         self.volume += variacao_volume
         if self.volume > self.capacidade:
