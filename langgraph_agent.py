@@ -217,6 +217,15 @@ def executar_controle_fisico(state: BayerState) -> Dict:
         nivel = filtrados.get(tid, setpoint)
         erro = nivel - setpoint
         integ = getattr(tanque, "_integ", 0.0)
+
+        # Anti-overshoot: ao chegar no setpoint vindo de cima (descida brusca), zera a
+        # integral. Senao a integral acumulada na descida mantém a valvula aberta e o
+        # nivel drena alem do setpoint (fica ~60 sem chuva p/ repor).
+        prev = getattr(tanque, "_prev_erro", 0.0)
+        if prev > 3.0 and erro < 2.0:
+            integ = 0.0
+            tanque._integ = 0.0
+
         if erro < 0.0:
             # fora do setpoint (nivel baixo): nao sobe a integral, decai rapido p/ nao
             # drenar demais abaixo; valvula segue suave (sem snap que causa bang)
@@ -224,6 +233,7 @@ def executar_controle_fisico(state: BayerState) -> Dict:
         elif not (erro / BANDA_PROP + integ >= 1.0):
             integ = max(0.0, min(1.0, integ + KI * erro))   # anti-windup alto
         tanque._integ = integ
+        tanque._prev_erro = erro
         tanque.abertura_valvula = max(0.0, min(1.0, erro / BANDA_PROP + integ))
     if VERBOSE:
         print(f"  ✅ PA: {planta_bayer.t_paralelo_a.abertura_valvula * 100:.1f}% "

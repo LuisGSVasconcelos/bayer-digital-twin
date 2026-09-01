@@ -191,7 +191,8 @@ class GeradorDisturbios:
     def _disturbio_alimentacao(self, planta):
         amp = self.config["variacao_alimentacao"]["amplitude"]
         freq = self.config["variacao_alimentacao"]["frequencia"]
-        osc = amp * math.sin(freq * self.tempo_simulacao) + random.uniform(-2.0, 2.0)
+        ruido = self.config["variacao_alimentacao"].get("ruido", 2.0)  # ruido base (± L/s)
+        osc = amp * math.sin(freq * self.tempo_simulacao) + random.uniform(-ruido, ruido)
         planta.disturbio_alimentacao_adicional = osc
 
     def _disturbio_desgaste_bomba(self, planta):
