@@ -173,6 +173,9 @@ No painel:
 - no painel **🌩️ Distúrbios**, **ligue/desligue** cada distúrbio (variação de alimentação,
   desgaste da bomba, atrito da válvula, desbalanceamento PA/PB, diluição de TC, sílica e picos
   de sensor) — **todos ficam ativos por padrão**, mas você pode desativar os que quiser;
+- no painel **🕹️ Válvula de saída (manual)**, marque **"Atuação manual da válvula"** para
+  **definir a abertura PA/PB manualmente** (sliders 0–100%), sobrepondo o controle PI — útil
+  para testar a resposta do nível a um comando manual (desligue p/ voltar ao automático);
 - acompanhe KPIs (níveis, TC, perda de soda) e gráficos (PV × SP × MV, química, distúrbios).
 
 **Comportamento do controle:** o agente atua como **regulador PI bidirecional**: quando o nível

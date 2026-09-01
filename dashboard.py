@@ -153,6 +153,19 @@ planta_bayer.gerador.config["spike_sensor"]["probabilidade"] = (
 
 st.sidebar.caption(f"Simulação acelerada: {SUBSTEPS_PER_TICK} ciclos/tick")
 
+st.sidebar.markdown("---")
+st.sidebar.subheader("🕹️ Válvula de saída (manual)")
+lga.FORCA_ABERTURA = {}  # reseta manual a cada rerun
+manual_val = st.sidebar.checkbox(
+    "Atuação manual da válvula",
+    value=False,
+    help="Define a abertura da válvula de drenagem manualmente, sobrepondo o controle PI.")
+if manual_val:
+    v_pa = st.sidebar.slider("Abertura PA (%)", 0, 100, 0, 5)
+    v_pb = st.sidebar.slider("Abertura PB (%)", 0, 100, 0, 5)
+    lga.FORCA_ABERTURA = {"PA": v_pa / 100.0, "PB": v_pb / 100.0}
+    st.sidebar.caption("Controle automático sobreposto. Desligue p/ voltar ao PI.")
+
 # ------------------------------ KPIs ------------------------------
 st.title("🏭 Digital Twin - Processo Bayer")
 df = st.session_state.historico

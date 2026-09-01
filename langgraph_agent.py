@@ -64,6 +64,7 @@ class BayerState(TypedDict):
 
 FORCA_CLIMA: str | None = None  # demo offline: "Forte" | "Moderada" | "Nenhuma" | None
 FORCA_INTENSIDADE_MM_S: float | None = None  # chuva CONTINUA (manual, mm/s): sobrepoe tudo
+FORCA_ABERTURA: dict = {}  # atuacao MANUAL da valvula de saida: {"PA": 0..1, "PB": 0..1}
 VERBOSE = True  # False silencia floods de print por ciclo (usado no dashboard)
 
 
@@ -244,6 +245,10 @@ def executar_controle_fisico(state: BayerState) -> Dict:
         tanque._prev_erro = erro
         tanque.abertura_valvula = max(0.0, min(1.0, erro / BANDA_PROP + i_d))
         tanque.abertura_makeup = max(0.0, min(1.0, (-erro) / BANDA_MAKEUP + i_m))
+        # Atuacao MANUAL da valvula de saida (override do PI), via FORCA_ABERTURA.
+        if FORCA_ABERTURA.get(tid) is not None:
+            tanque.abertura_valvula = max(0.0, min(1.0, float(FORCA_ABERTURA.get(tid))))
+            tanque.abertura_makeup = 0.0
     if VERBOSE:
         print(f"  ✅ PA: drenagem {planta_bayer.t_paralelo_a.abertura_valvula * 100:.0f}% "
               f"makeup {planta_bayer.t_paralelo_a.abertura_makeup * 100:.0f}% | "
