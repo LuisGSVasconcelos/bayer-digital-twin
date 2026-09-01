@@ -19,6 +19,7 @@ def roda(desc, modo, N=3000):
     for t_ in (p.t_paralelo_a, p.t_paralelo_b):
         t_._integ = 0.0; t_._integ_mk = 0.0; t_._prev_erro = 0.0
     agent.fuzzy_ctrl_pa.reset(); agent.fuzzy_ctrl_pb.reset()
+    agent.fuzzy_mk_pa.reset(); agent.fuzzy_mk_pb.reset()
     agent.app = agent.build_app()
     cfg = {"configurable": {"thread_id": desc}}
     INIT = dict(agent.estado_inicial)

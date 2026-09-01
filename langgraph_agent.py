@@ -28,10 +28,14 @@ except Exception:  # pragma: no cover
 # ----------------------------------------------------------------------------
 planta_bayer = PlantaBayerSimulada(ativar_disturbios=True)
 
-# A3: um controlador fuzzy adaptativo por decantador
+# A3: um controlador fuzzy adaptativo por decantador (DRENAGEM)
 fuzzy_ctrl_pa = AdaptiveFuzzyController(taxa_aprendizado=0.001, momentum=0.9, ganho_min=0.5, ganho_max=1.8)
 fuzzy_ctrl_pb = AdaptiveFuzzyController(taxa_aprendizado=0.001, momentum=0.9, ganho_min=0.5, ganho_max=1.8)
 FUZZY_CTRL = {"PA": fuzzy_ctrl_pa, "PB": fuzzy_ctrl_pb}
+# Controladores fuzzy do MAKEUP (erro invertido): abrem a injecao quando o nivel fica BAIXO
+fuzzy_mk_pa = AdaptiveFuzzyController(taxa_aprendizado=0.001, momentum=0.9, ganho_min=0.5, ganho_max=1.8)
+fuzzy_mk_pb = AdaptiveFuzzyController(taxa_aprendizado=0.001, momentum=0.9, ganho_min=0.5, ganho_max=1.8)
+FUZZY_MK_CTRL = {"PA": fuzzy_mk_pa, "PB": fuzzy_mk_pb}
 
 ALPHA_EMA = 0.3
 LIMITE_ALTO = 80.0   # nivel filtrado acima do qual e critico incondicionalmente
@@ -53,6 +57,7 @@ class BayerState(TypedDict):
     acao_necessaria: bool
     setpoint: float
     abertura_recomendada: Dict[str, float]
+    abertura_makeup_recomendada: Dict[str, float]
     chuva_atual_mm_h: float
     descricao_clima: str
     alerta_meteorologico: str
@@ -183,27 +188,42 @@ def avaliar_risco_bayer(state: BayerState) -> Dict:
 
 
 def calcular_controle(state: BayerState) -> Dict:
-    """A3: controlador independente por tanque (PA/PB) usando nivel filtrado."""
+    """A3: controlador independente por tanque (PA/PB) usando nivel filtrado.
+
+    Calcula abertura de DRENAGEM (fuzzy c/ erro = nivel-setpoint) e de MAKEUP
+    (fuzzy dedicado c/ erro invertido = setpoint-nivel). Assim o fuzzy tambem
+    atua na reposicao (bidirecional), podendo ser comparado ao PI.
+    """
     setpoint = state.get("setpoint", 65.0)
     filtrados = state.get("niveis_filtrados", {}) or {}
     tend = state.get("tendencia_suavizada", {}) or {}
 
     aberturas = {}
+    aberturas_mk = {}
     for tid, ctrl in FUZZY_CTRL.items():
         nivel = filtrados.get(tid, 0.0)
         deriv = tend.get(tid, 0.0)
         erro = nivel - setpoint
         abertura = ctrl.calcular_abertura(erro, deriv)
         aberturas[tid] = round(abertura, 3)
+        # makeup: fuzzy dedicado com erro invertido, mas SOMENTE quando o nivel esta
+        # ABAIXO do setpoint (erro<0). Acima, o makeup fica fechado.
+        if erro < 0.0:
+            ctrl_mk = FUZZY_MK_CTRL[tid]
+            aberturas_mk[tid] = round(ctrl_mk.calcular_abertura(-erro, -deriv), 3)
+        else:
+            aberturas_mk[tid] = 0.0
         if VERBOSE:
-            print(f"🎛️ [FUZZY ADAPT {tid}] Erro={erro:.1f}% Deriv={deriv:.2f} "
-                  f"-> Abertura={abertura * 100:.1f}% (Ganho={ctrl.ganho:.3f})")
+            print(f"🎛️ [FUZZY {tid}] Dreno={abertura * 100:.0f}% Makeup={aberturas_mk[tid] * 100:.0f}% "
+                  f"(Ganho drain={ctrl.ganho:.2f} mk={FUZZY_MK_CTRL[tid].ganho:.2f})")
 
-    return {"abertura_recomendada": aberturas}
+    return {"abertura_recomendada": aberturas,
+            "abertura_makeup_recomendada": aberturas_mk}
 
 
 def executar_controle_fisico(state: BayerState) -> Dict:
     aberturas = state.get("abertura_recomendada", {}) or {}
+    aberturas_mk = state.get("abertura_makeup_recomendada", {}) or {}
     criticos = state.get("tanques_criticos", []) or []
     setpoint = state.get("setpoint", 65.0)
     filtrados = state.get("niveis_filtrados", {}) or {}
@@ -220,9 +240,10 @@ def executar_controle_fisico(state: BayerState) -> Dict:
     mapa = {"PA": planta_bayer.t_paralelo_a, "PB": planta_bayer.t_paralelo_b}
     for tid, tanque in mapa.items():
         if MODO_CONTROLE == "fuzzy":
-            # Fuzzy adaptativo recomenda a DRENAGEM (ato de remocao), sem makeup.
+            # Fuzzy adaptativo atua nas DUAS direcoes: drenagem (c/ erro) e makeup (erro
+            # invertido). Aplica as recomendacoes do calcular_controle.
             tanque.abertura_valvula = max(0.0, min(1.0, aberturas.get(tid, 0.0)))
-            tanque.abertura_makeup = 0.0
+            tanque.abertura_makeup = max(0.0, min(1.0, aberturas_mk.get(tid, 0.0)))
             continue
         nivel = filtrados.get(tid, setpoint)
         erro = nivel - setpoint
@@ -307,6 +328,7 @@ estado_inicial = {
     "tanques_criticos": [],
     "acao_necessaria": False,
     "abertura_recomendada": {},
+    "abertura_makeup_recomendada": {},
     "historico": {"PA": [], "PB": []},
     "ema_prev": {},
 }
