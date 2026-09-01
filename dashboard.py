@@ -151,6 +151,16 @@ planta_bayer.gerador.config["spike_sensor"]["probabilidade"] = (
     0.02 if st.sidebar.checkbox("Picos de sensor (ruído de leitura)", value=False,
                                 help="Adiciona picos esporádicos na leitura dos níveis") else 0.0)
 
+st.sidebar.markdown("---")
+st.sidebar.subheader("🎛️ Controlador")
+_modo = st.sidebar.radio(
+    "Estratégia de controle",
+    ["PI (drenagem + makeup)", "Fuzzy Adaptativo"],
+    index=0,
+    help="PI: drenagem + makeup (segura o setpoint, bidirecional). Fuzzy: controlador adaptativo "
+         "(só drenagem) para comparar.")
+lga.MODO_CONTROLE = "fuzzy" if str(_modo).startswith("Fuzzy") else "pi"
+
 st.sidebar.caption(f"Simulação acelerada: {SUBSTEPS_PER_TICK} ciclos/tick")
 
 st.sidebar.markdown("---")

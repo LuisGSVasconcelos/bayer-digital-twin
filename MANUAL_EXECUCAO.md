@@ -168,6 +168,10 @@ No painel:
 - ajuste a **velocidade** (ciclos/s) — a simulação roda acelerada (vários ciclos/tick);
 - no seletor **Cenário de clima**, force chuva fixa (**Forte/Moderada/Nenhuma**), ajuste a
   **chuva de forma contínua** com o **slider "Manual..."** (0–0,30 mm/s), ou use a **API** real;
+- no seletor **🎛️ Controlador**, escolha a **estratégia de controle**: **PI (drenagem + makeup)**
+  — segura o setpoint de forma bidirecional — ou **Fuzzy Adaptativo** — controlador fuzzy com
+  ganho adaptativo (só drenagem), para **comparar** o comportamento (no teste de referência com
+  chuva forte o PI assentou com mínimo 64,98% vs 64,13% do fuzzy);
 - quando o alerta de HITL aparecer, o loop **pausa** (não congela) e abre o botão
   **✅ Aprovar Ação Emergencial** no painel **HITL**; clique-o para liberar a válvula;
 - no painel **🌩️ Distúrbios**, **ligue/desligue** cada distúrbio (variação de alimentação,

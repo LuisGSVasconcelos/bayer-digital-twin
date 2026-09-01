@@ -65,6 +65,7 @@ class BayerState(TypedDict):
 FORCA_CLIMA: str | None = None  # demo offline: "Forte" | "Moderada" | "Nenhuma" | None
 FORCA_INTENSIDADE_MM_S: float | None = None  # chuva CONTINUA (manual, mm/s): sobrepoe tudo
 FORCA_ABERTURA: dict = {}  # atuacao MANUAL da valvula de saida: {"PA": 0..1, "PB": 0..1}
+MODO_CONTROLE: str = "pi"  # "pi" (bidirecional c/ makeup) | "fuzzy" (adaptativo, so drenagem)
 VERBOSE = True  # False silencia floods de print por ciclo (usado no dashboard)
 
 
@@ -218,6 +219,11 @@ def executar_controle_fisico(state: BayerState) -> Dict:
     KI = 0.008
     mapa = {"PA": planta_bayer.t_paralelo_a, "PB": planta_bayer.t_paralelo_b}
     for tid, tanque in mapa.items():
+        if MODO_CONTROLE == "fuzzy":
+            # Fuzzy adaptativo recomenda a DRENAGEM (ato de remocao), sem makeup.
+            tanque.abertura_valvula = max(0.0, min(1.0, aberturas.get(tid, 0.0)))
+            tanque.abertura_makeup = 0.0
+            continue
         nivel = filtrados.get(tid, setpoint)
         erro = nivel - setpoint
         i_d = getattr(tanque, "_integ", 0.0)       # integral da drenagem (0..1)
