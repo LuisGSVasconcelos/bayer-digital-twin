@@ -170,9 +170,9 @@ No painel:
   **chuva de forma contínua** com o **slider "Manual..."** (0–0,30 mm/s), ou use a **API** real;
 - no seletor **🎛️ Controlador**, escolha a **estratégia de controle**: **PI (drenagem + makeup)**
   — segura o setpoint de forma bidirecional — ou **Fuzzy Adaptativo** — controlador fuzzy com
-  ganho adaptativo atuando **tanto na drenagem quanto no makeup** (bidirecional), para
-  **comparar** o comportamento (no teste de referência com chuva forte: PI mín 64,98 / mws 65,35;
-  fuzzy bidirecional mín 64,99 / mws 65,00);
+  ganho adaptativo atuando **tanto na drenagem quanto no makeup** (bidirecional, com **faixa
+  morta + limite de slew** para modular sem estalar), para **comparar** o comportamento (no teste
+  de referência com chuva forte: PI mín 64,98 / mws 65,39; fuzzy mín 64,47 / mws 64,88);
 - quando o alerta de HITL aparecer, o loop **pausa** (não congela) e abre o botão
   **✅ Aprovar Ação Emergencial** no painel **HITL**; clique-o para liberar a válvula;
 - no painel **🌩️ Distúrbios**, **ligue/desligue** cada distúrbio (variação de alimentação,

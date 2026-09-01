@@ -32,9 +32,10 @@ planta_bayer = PlantaBayerSimulada(ativar_disturbios=True)
 fuzzy_ctrl_pa = AdaptiveFuzzyController(taxa_aprendizado=0.001, momentum=0.9, ganho_min=0.5, ganho_max=1.8)
 fuzzy_ctrl_pb = AdaptiveFuzzyController(taxa_aprendizado=0.001, momentum=0.9, ganho_min=0.5, ganho_max=1.8)
 FUZZY_CTRL = {"PA": fuzzy_ctrl_pa, "PB": fuzzy_ctrl_pb}
-# Controladores fuzzy do MAKEUP (erro invertido): abrem a injecao quando o nivel fica BAIXO
-fuzzy_mk_pa = AdaptiveFuzzyController(taxa_aprendizado=0.001, momentum=0.9, ganho_min=0.5, ganho_max=1.8)
-fuzzy_mk_pb = AdaptiveFuzzyController(taxa_aprendizado=0.001, momentum=0.9, ganho_min=0.5, ganho_max=1.8)
+# Controladores fuzzy do MAKEUP (erro invertido): abrem a injecao quando o nivel fica BAIXO.
+# Ganho_max moderado (1.0) p/ nao saturar/estalar o makeup (evita chattering 0<->aberto).
+fuzzy_mk_pa = AdaptiveFuzzyController(taxa_aprendizado=0.001, momentum=0.9, ganho_min=0.4, ganho_max=1.0)
+fuzzy_mk_pb = AdaptiveFuzzyController(taxa_aprendizado=0.001, momentum=0.9, ganho_min=0.4, ganho_max=1.0)
 FUZZY_MK_CTRL = {"PA": fuzzy_mk_pa, "PB": fuzzy_mk_pb}
 
 ALPHA_EMA = 0.3
@@ -206,9 +207,9 @@ def calcular_controle(state: BayerState) -> Dict:
         erro = nivel - setpoint
         abertura = ctrl.calcular_abertura(erro, deriv)
         aberturas[tid] = round(abertura, 3)
-        # makeup: fuzzy dedicado com erro invertido, mas SOMENTE quando o nivel esta
-        # ABAIXO do setpoint (erro<0). Acima, o makeup fica fechado.
-        if erro < 0.0:
+        # makeup: fuzzy dedicado com erro invertido, com FAIXA MORTA p/ evitar chattering.
+        # So engaja quando o nivel esta claramente ABAIXO do setpoint (erro < -banda).
+        if erro < -0.5:
             ctrl_mk = FUZZY_MK_CTRL[tid]
             aberturas_mk[tid] = round(ctrl_mk.calcular_abertura(-erro, -deriv), 3)
         else:
@@ -240,10 +241,18 @@ def executar_controle_fisico(state: BayerState) -> Dict:
     mapa = {"PA": planta_bayer.t_paralelo_a, "PB": planta_bayer.t_paralelo_b}
     for tid, tanque in mapa.items():
         if MODO_CONTROLE == "fuzzy":
-            # Fuzzy adaptativo atua nas DUAS direcoes: drenagem (c/ erro) e makeup (erro
-            # invertido). Aplica as recomendacoes do calcular_controle.
-            tanque.abertura_valvula = max(0.0, min(1.0, aberturas.get(tid, 0.0)))
-            tanque.abertura_makeup = max(0.0, min(1.0, aberturas_mk.get(tid, 0.0)))
+            # Fuzzy adaptativo atua nas DUAS direcoes. Para evitar chattering (0<->aberto
+            # a cada ciclo), aplica SLEW-RATE limit (rampa do atuador) nas duas saidas.
+            _alvo_d = max(0.0, min(1.0, aberturas.get(tid, 0.0)))
+            _alvo_mk = max(0.0, min(1.0, aberturas_mk.get(tid, 0.0)))
+            _d = getattr(tanque, "_fuzz_d", 0.0)
+            _m = getattr(tanque, "_fuzz_mk", 0.0)
+            _d += max(-0.03, min(0.03, _alvo_d - _d))
+            _m += max(-0.03, min(0.03, _alvo_mk - _m))
+            tanque._fuzz_d = _d
+            tanque._fuzz_mk = _m
+            tanque.abertura_valvula = _d
+            tanque.abertura_makeup = _m
             continue
         nivel = filtrados.get(tid, setpoint)
         erro = nivel - setpoint
