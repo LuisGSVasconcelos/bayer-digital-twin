@@ -104,7 +104,7 @@ if st.sidebar.button("▶️ Iniciar"):
     st.session_state.executando = True
 if st.sidebar.button("⏹️ Parar"):
     st.session_state.executando = False
-speed = st.sidebar.slider("Velocidade (ciclos/s)", 1, 20, 5)
+speed = st.sidebar.slider("Velocidade (ciclos/s)", 1, 12, 3)
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🌤️ Clima (demo)")
@@ -233,7 +233,7 @@ if not df.empty:
                        legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0))
     fig1.update_yaxes(title_text="Nível (%)", secondary_y=False)
     fig1.update_yaxes(title_text="Abertura (%)", secondary_y=True, range=[0, 100])
-    st.plotly_chart(fig1, width="stretch")
+    st.plotly_chart(fig1, width="stretch", config={"displayModeBar": False})
 
     fig2 = make_subplots(specs=[[{"secondary_y": True}]])
     fig2.add_trace(go.Scatter(x=df["timestamp"], y=df["tc_saida"], name="TC (g/L)",
@@ -243,7 +243,7 @@ if not df.empty:
     fig2.add_trace(go.Bar(x=df["timestamp"], y=df["chuva_mm_h"], name="Chuva (mm/s)",
                           marker_color="blue", opacity=0.3), secondary_y=True)
     fig2.update_layout(title="Química e Distúrbios", height=300)
-    st.plotly_chart(fig2, width="stretch")
+    st.plotly_chart(fig2, width="stretch", config={"displayModeBar": False})
 
     with st.expander("📋 Log de Eventos"):
         st.dataframe(df.tail(10)[["timestamp", "alerta_agente", "nivel_PA", "tc_saida"]])
