@@ -165,10 +165,37 @@ if manual_val:
     v_pb = st.sidebar.slider("Abertura PB (%)", 0, 100, 0, 5)
     lga.FORCA_ABERTURA = {"PA": v_pa / 100.0, "PB": v_pb / 100.0}
     st.sidebar.caption("Controle automático sobreposto. Desligue p/ voltar ao PI.")
+    # Modo manual = operador acionando a valvula diretamente: a acao manual ja e a
+    # "aprovacao" humana, entao libera qualquer HITL pendente (nao congela a simulacao).
+    _snap = st.session_state.agente.get_state(st.session_state.config_agente)
+    if _snap and _snap.next:
+        st.session_state.agente.update_state(
+            st.session_state.config_agente, {"emergencia_aprovada": True},
+            as_node="aguardar_operador")
+        for _ in st.session_state.agente.stream(None, st.session_state.config_agente):
+            pass
+        st.session_state.executando = True
 
 # ------------------------------ KPIs ------------------------------
 st.title("🏭 Digital Twin - Processo Bayer")
 df = st.session_state.historico
+
+# HITL proeminente no corpo: quando ha aprovacao pendente, mostra banner + botao grande
+try:
+    _snap_h = st.session_state.agente.get_state(st.session_state.config_agente)
+    if _snap_h and _snap_h.next:
+        st.error("⚠️ **Ação Emergencial pendente de aprovação humana** — o loop pausou "
+                 "automaticamente (não é travamento). Aprove para liberar a ação.")
+        _aprov = st.button("✅ Aprovar Ação Emergencial (libera o loop)", type="primary")
+        if _aprov:
+            st.session_state.agente.update_state(
+                st.session_state.config_agente, {"emergencia_aprovada": True},
+                as_node="aguardar_operador")
+            for _ in st.session_state.agente.stream(None, st.session_state.config_agente):
+                pass
+            st.session_state.executando = True
+except Exception:
+    pass
 
 if not df.empty:
     ultimo = df.iloc[-1]

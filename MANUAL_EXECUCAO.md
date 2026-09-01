@@ -176,6 +176,10 @@ No painel:
 - no painel **🕹️ Válvula de saída (manual)**, marque **"Atuação manual da válvula"** para
   **definir a abertura PA/PB manualmente** (sliders 0–100%), sobrepondo o controle PI — útil
   para testar a resposta do nível a um comando manual (desligue p/ voltar ao automático);
+- quando uma **ação emergencial** dispara, o loop **pausa** e aparece um **banner + botão
+  "Aprovar" em destaque no corpo** (não é travamento) — aprovar libera a ação; em **modo manual**
+  da válvula, o HITL pendente é **liberado automaticamente** (o operador já está acionando a
+  válvula);
 - acompanhe KPIs (níveis, TC, perda de soda) e gráficos (PV × SP × MV, química, distúrbios).
 
 **Comportamento do controle:** o agente atua como **regulador PI bidirecional**: quando o nível
