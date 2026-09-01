@@ -190,6 +190,13 @@ manter os 65%. O balanço também **conserva a caustica** (a soda que sai no lic
 abatida da massa), de modo que o **TC estabiliza** perto do valor de entrada, com uma perda
 química de sílica **realista** (pequena).
 
+> **Nota (chuva × nível):** a válvula de drenagem é **unidirecional** (só remove). Para o nível
+> **sustentar no setpoint** o demo precisa de **chuva ativa** (padrão **Forte**). Se você
+> escolher **"Nenhuma"** ou **"Manual"** com valor baixo, o nível **segue a alimentação** e pode
+> cair aos poucos (os distúrbios que reduzem a vazão, como a variação de alimentação e o
+> desgaste da bomba, não podem ser repostos pela válvula) — comportamento físico de um atuador
+> só-drenagem, não um bug. Para a demonstração de "segurar no setpoint", mantenha a chuva ativa.
+
 **Cenário de demonstração:** o dashboard abre com os decantadores **acima do limiar (≈80,5%)**
 — o HITL dispara já no primeiro ciclo (botão Aprovar disponível). Ao aprovar, a ação é
 **travada**: a válvula continua drenando **sem re-pedir aprovação a cada ciclo** até o nível
