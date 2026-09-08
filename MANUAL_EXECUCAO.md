@@ -165,8 +165,9 @@ Abra no navegador: **http://localhost:8501**
 
 No painel:
 - clique **Iniciar** para rodar a simulação e **Parar** para pausar;
-- use o **passo manual (tick)** para avançar **exatamente 1, 10 ou 30 ciclos** a cada clique
-  (útil para acompanhar o sistema ciclo a ciclo sem deixar rodar);
+- no seletor **Modo de simulação**, escolha **▶️ Contínuo** (roda sozinho com **Iniciar/Parar**)
+  ou **📖 Manual (ticks)** (está pausado e avança **exatamente 1, 10 ou 30 ciclos** a cada
+  clique) — ideal para acompanhar o sistema ciclo a ciclo;
 - ajuste o **movimento** (ciclos por atualização) — a página usa **renderização por fragmento**,
   atualizando só os gráficos/status a cada ~0,4 s sem piscar a página inteira;
 - no seletor **Cenário de clima**, force chuva fixa (**Forte/Moderada/Nenhuma**), ajuste a

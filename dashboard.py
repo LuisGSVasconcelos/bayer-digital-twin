@@ -121,21 +121,33 @@ def avancar_ticks(n):
 
 # ------------------------------ SIDEBAR ------------------------------
 st.sidebar.title("🏭 Sala de Controle")
-if st.sidebar.button("▶️ Iniciar"):
-    st.session_state.executando = True
-if st.sidebar.button("⏹️ Parar"):
-    st.session_state.executando = False
 
-st.sidebar.markdown("**🔢 Passo manual (tick)**")
-if st.sidebar.button("⏪ 1 tick"):
-    avancar_ticks(1)
-    st.rerun()
-if st.sidebar.button("⏩ 10 ticks"):
-    avancar_ticks(10)
-    st.rerun()
-if st.sidebar.button("⏭️ 30 ticks"):
-    avancar_ticks(30)
-    st.rerun()
+modo = st.sidebar.radio(
+    "Modo de simulação",
+    ["▶️ Contínuo", "📖 Manual (ticks)"],
+    index=0,
+    help="Contínuo: roda sozinho (Iniciar/Parar). Manual: avance exatamente 1/10/30 ciclos "
+         "a cada clique nos botões de tick.")
+
+if modo == "▶️ Contínuo":
+    if st.sidebar.button("▶️ Iniciar"):
+        st.session_state.executando = True
+    if st.sidebar.button("⏹️ Parar"):
+        st.session_state.executando = False
+else:
+    # Modo manual: para o loop contínuo e usa somente os botões de passo.
+    st.session_state.executando = False
+    st.sidebar.caption("Pausado — avance com os botões abaixo:")
+    st.sidebar.markdown("**🔢 Passo manual (tick)**")
+    if st.sidebar.button("⏪ 1 tick"):
+        avancar_ticks(1)
+        st.rerun()
+    if st.sidebar.button("⏩ 10 ticks"):
+        avancar_ticks(10)
+        st.rerun()
+    if st.sidebar.button("⏭️ 30 ticks"):
+        avancar_ticks(30)
+        st.rerun()
 ciclos_render = st.sidebar.slider("Ciclos por atualização (movimento)", 5, 40, 14)
 st.session_state.ciclos_render = ciclos_render
 
