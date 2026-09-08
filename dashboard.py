@@ -267,12 +267,17 @@ st.sidebar.markdown("---")
 st.sidebar.subheader("🕹️ Válvula de saída (manual)")
 manual_val = st.sidebar.checkbox(
     "Atuação manual da válvula", value=False, key="manual_valvula",
-    help="Define a abertura da válvula de drenagem manualmente, sobrepondo o controle PI.")
+    help="Define a abertura da válvula de drenagem manualmente, sobrepondo o controle PI/fuzzy.")
+# Sliders SEMPRE visiveis (desabilitados quando manual estiver OFF) -> nao somem nunca.
+_pa = int(st.session_state.get("abertura_pa", 0))
+_pb = int(st.session_state.get("abertura_pb", 0))
+v_pa = st.sidebar.slider("Abertura PA (%)", 0, 100, _pa, 5, key="abertura_pa",
+                         disabled=not manual_val)
+v_pb = st.sidebar.slider("Abertura PB (%)", 0, 100, _pb, 5, key="abertura_pb",
+                         disabled=not manual_val)
 if manual_val:
-    v_pa = st.sidebar.slider("Abertura PA (%)", 0, 100, 0, 5, key="abertura_pa")
-    v_pb = st.sidebar.slider("Abertura PB (%)", 0, 100, 0, 5, key="abertura_pb")
     lga.FORCA_ABERTURA = {"PA": v_pa / 100.0, "PB": v_pb / 100.0}
-    st.sidebar.caption("Controle automático sobreposto. Desligue p/ voltar ao PI.")
+    st.sidebar.caption("Controle automático sobreposto. Desligue p/ voltar ao automático.")
     # Modo manual = operador acionando a valvula diretamente: a acao manual ja e a
     # "aprovacao" humana, entao libera qualquer HITL pendente (nao congela a simulacao).
     _snap = st.session_state.agente.get_state(st.session_state.config_agente)
