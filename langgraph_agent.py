@@ -240,6 +240,12 @@ def executar_controle_fisico(state: BayerState) -> Dict:
     KI = 0.008
     mapa = {"PA": planta_bayer.t_paralelo_a, "PB": planta_bayer.t_paralelo_b}
     for tid, tanque in mapa.items():
+        # Atuacao MANUAL da valvula de saida (override): sobrepoe QUALQUER controle
+        # (PI ou fuzzy). Aplicado no topo do loop para valer nos dois modos.
+        if FORCA_ABERTURA.get(tid) is not None:
+            tanque.abertura_valvula = max(0.0, min(1.0, float(FORCA_ABERTURA.get(tid))))
+            tanque.abertura_makeup = 0.0
+            continue
         if MODO_CONTROLE == "fuzzy":
             # Fuzzy adaptativo atua nas DUAS direcoes. Para evitar chattering (0<->aberto
             # a cada ciclo), aplica SLEW-RATE limit (rampa do atuador) nas duas saidas.
@@ -281,10 +287,6 @@ def executar_controle_fisico(state: BayerState) -> Dict:
         tanque._prev_erro = erro
         tanque.abertura_valvula = max(0.0, min(1.0, erro / BANDA_PROP + i_d))
         tanque.abertura_makeup = max(0.0, min(1.0, (-erro) / BANDA_MAKEUP + i_m))
-        # Atuacao MANUAL da valvula de saida (override do PI), via FORCA_ABERTURA.
-        if FORCA_ABERTURA.get(tid) is not None:
-            tanque.abertura_valvula = max(0.0, min(1.0, float(FORCA_ABERTURA.get(tid))))
-            tanque.abertura_makeup = 0.0
     if VERBOSE:
         print(f"  ✅ PA: drenagem {planta_bayer.t_paralelo_a.abertura_valvula * 100:.0f}% "
               f"makeup {planta_bayer.t_paralelo_a.abertura_makeup * 100:.0f}% | "
