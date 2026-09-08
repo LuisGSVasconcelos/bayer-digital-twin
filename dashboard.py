@@ -273,9 +273,6 @@ _pa = int(st.session_state.get("abertura_pa", 0))
 _pb = int(st.session_state.get("abertura_pb", 0))
 v_pa = st.sidebar.slider("Abertura PA (%)", 0, 100, _pa, 5, key="abertura_pa")
 v_pb = st.sidebar.slider("Abertura PB (%)", 0, 100, _pb, 5, key="abertura_pb")
-# Persiste os valores mais recentes para o aplicar_valvula() reaplicar a cada tick.
-st.session_state["abertura_pa"] = v_pa
-st.session_state["abertura_pb"] = v_pb
 if manual_val:
     lga.FORCA_ABERTURA = {"PA": v_pa / 100.0, "PB": v_pb / 100.0}
     st.sidebar.caption("Controle automático sobreposto. Desligue p/ voltar ao automático.")
