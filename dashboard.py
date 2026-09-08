@@ -111,9 +111,25 @@ def aplicar_clima():
         lga.FORCA_CLIMA = "Forte"
 
 
+def aplicar_valvula():
+    """Re-aplica a atuação manual da válvula (persistida) em cada tick.
+
+    Fix (mesmo padrão do clima): lga.FORCA_ABERTURA era setado só no sidebar; nos ticks
+    seguintes (fragmento) isso se perdia. Aqui relemos do session_state a cada ciclo.
+    """
+    if st.session_state.get("manual_valvula", False):
+        lga.FORCA_ABERTURA = {
+            "PA": float(st.session_state.get("abertura_pa", 0)) / 100.0,
+            "PB": float(st.session_state.get("abertura_pb", 0)) / 100.0,
+        }
+    else:
+        lga.FORCA_ABERTURA = {}
+
+
 def executar_ciclo():
     try:
-        aplicar_clima()  # garante o cenário escolhido em cada tick (nao volta ao padrao)
+        aplicar_clima()   # garante o cenário escolhido em cada tick (nao volta ao padrao)
+        aplicar_valvula() # garante a atuação manual da válvula a cada tick
         # Seguranca: se ja ha HITL pendente, NAO re-stream (evita burlar a aprovacao)
         snap0 = st.session_state.agente.get_state(st.session_state.config_agente)
         if snap0 and snap0.next:
@@ -142,7 +158,8 @@ def avancar_ticks(n):
     """Avança EXATAMENTE n ciclos (passo manual), capturando cada tick no historico."""
     S = st.session_state
     try:
-        aplicar_clima()  # garante o cenário escolhido em cada tick manual também
+        aplicar_clima()   # garante o cenário escolhido em cada tick manual também
+        aplicar_valvula() # garante a atuação manual da válvula a cada tick manual
         for _ in range(n):
             # bloqueia se houver HITL pendente (nao burla a aprovacao humana)
             snap0 = S.agente.get_state(S.config_agente)
@@ -248,14 +265,12 @@ st.sidebar.caption(f"Simulação acelerada: {SUBSTEPS_PER_TICK} ciclos/tick")
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🕹️ Válvula de saída (manual)")
-lga.FORCA_ABERTURA = {}  # reseta manual a cada rerun
 manual_val = st.sidebar.checkbox(
-    "Atuação manual da válvula",
-    value=False,
+    "Atuação manual da válvula", value=False, key="manual_valvula",
     help="Define a abertura da válvula de drenagem manualmente, sobrepondo o controle PI.")
 if manual_val:
-    v_pa = st.sidebar.slider("Abertura PA (%)", 0, 100, 0, 5)
-    v_pb = st.sidebar.slider("Abertura PB (%)", 0, 100, 0, 5)
+    v_pa = st.sidebar.slider("Abertura PA (%)", 0, 100, 0, 5, key="abertura_pa")
+    v_pb = st.sidebar.slider("Abertura PB (%)", 0, 100, 0, 5, key="abertura_pb")
     lga.FORCA_ABERTURA = {"PA": v_pa / 100.0, "PB": v_pb / 100.0}
     st.sidebar.caption("Controle automático sobreposto. Desligue p/ voltar ao PI.")
     # Modo manual = operador acionando a valvula diretamente: a acao manual ja e a
