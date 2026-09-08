@@ -91,8 +91,29 @@ def anexar_linha_historico(planta, snap, n_ciclos=1):
             [st.session_state.historico, novo_df], ignore_index=True).tail(200)
 
 
+def aplicar_clima():
+    """Re-aplica o clima escolhido (persistido em session_state) a cada tick.
+
+    Fix: antes o lga.FORCA_CLIMA era setado só no script completo (sidebar). Nos ticks
+    seguintes (fragmento run_every), o sidebar nao roda e nada reaplicava -> voltava ao
+    padrao 'Forte'. Este helper roda no inicio de cada ciclo e usa o cenario persistido.
+    """
+    c = st.session_state.get("cenario_clima", "Forte")
+    lga.FORCA_INTENSIDADE_MM_S = None
+    if c == "Manual...":
+        lga.FORCA_CLIMA = None
+        lga.FORCA_INTENSIDADE_MM_S = float(st.session_state.get("chuva_manual", 0.12))
+    elif c == "Real (API)":
+        lga.FORCA_CLIMA = None
+    elif c in ("Forte", "Moderada", "Nenhuma"):
+        lga.FORCA_CLIMA = c
+    else:
+        lga.FORCA_CLIMA = "Forte"
+
+
 def executar_ciclo():
     try:
+        aplicar_clima()  # garante o cenário escolhido em cada tick (nao volta ao padrao)
         # Seguranca: se ja ha HITL pendente, NAO re-stream (evita burlar a aprovacao)
         snap0 = st.session_state.agente.get_state(st.session_state.config_agente)
         if snap0 and snap0.next:
@@ -121,6 +142,7 @@ def avancar_ticks(n):
     """Avança EXATAMENTE n ciclos (passo manual), capturando cada tick no historico."""
     S = st.session_state
     try:
+        aplicar_clima()  # garante o cenário escolhido em cada tick manual também
         for _ in range(n):
             # bloqueia se houver HITL pendente (nao burla a aprovacao humana)
             snap0 = S.agente.get_state(S.config_agente)
@@ -173,13 +195,13 @@ lga.FORCA_INTENSIDADE_MM_S = None  # reseta manual a cada rerun
 cenario = st.sidebar.selectbox(
     "Cenário de clima",
     ["Forte", "Moderada", "Nenhuma", "Manual...", "Real (API)"],
-    index=0,
+    index=0, key="cenario_clima",
     help="Forte/Moderada forçam chuva fixa; \"Manual...\" ajusta a chuva de forma contínua "
          "(slider); \"Real\" usa a API OpenWeather.",
 )
 if cenario == "Manual...":
     mm_s = st.sidebar.slider(
-        "Intensidade da chuva (mm/s)", 0.0, 0.30, 0.12, 0.01,
+        "Intensidade da chuva (mm/s)", 0.0, 0.30, 0.12, 0.01, key="chuva_manual",
         help="Chuva contínua: varia suavemente entre 0 e 0,30 mm/s (além dos 3 estados fixos).")
     lga.FORCA_INTENSIDADE_MM_S = float(mm_s)
     lga.FORCA_CLIMA = None
