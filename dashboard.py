@@ -4,7 +4,7 @@ Uso: streamlit run dashboard.py
 Dependencias: streamlit, plotly, pandas (ver requirements.txt).
 """
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import streamlit as st
 import pandas as pd
@@ -21,6 +21,11 @@ st.set_page_config(page_title="Bayer Process Control Room", page_icon="🏭", la
 
 SETPOINT = 65.0
 SUBSTEPS_PER_TICK = 10  # A) varios ciclos fisicos por tick (relogio acelerado, leve)
+
+# Relogio FICTICIO e independente do computador: cada ciclo de processo conta como
+# DT_CICLO segundos a partir de uma epoca fixa. Usado em modo continuo e manual (ticks).
+DT_CICLO = 1.0           # s de processo por ciclo (vazoes em L/s => 1 ciclo ~ 1 s)
+EPOCH_SIM = datetime(2024, 1, 1, 0, 0, 0)
 
 # Inicializacao do estado da sessao
 if "agente" not in st.session_state:
@@ -41,6 +46,8 @@ if "agente" not in st.session_state:
     st.session_state.config_agente = {"configurable": {"thread_id": "dashboard"}}
     st.session_state.estado_atual = dict(estado_inicial)
     st.session_state.executando = False
+    st.session_state.tick = 0  # total de ciclos de processo (relogio ficticio)
+    st.session_state.epoca = EPOCH_SIM
     st.session_state.historico = pd.DataFrame(columns=[
         "timestamp", "nivel_PA", "nivel_PB", "nivel_S1", "nivel_S2",
         "abertura_PA", "abertura_PB", "makeup_PA", "makeup_PB", "tc_saida", "soda_perdida_pa", "soda_perdida_pb",
@@ -48,11 +55,18 @@ if "agente" not in st.session_state:
     ])
 
 
-def anexar_linha_historico(planta, snap):
-    """Anexa uma linha (fotografia do tick) ao historico do dashboard."""
+def anexar_linha_historico(planta, snap, n_ciclos=1):
+    """Anexa uma linha (fotografia do tick) ao historico do dashboard.
+
+    O tempo e FICTICIO: avanca n_ciclos x DT_CICLO a partir da epoca da sessao,
+    independente do relogio do computador (funciona em modo continuo e manual).
+    """
+    S = st.session_state
+    S.tick += n_ciclos
+    t_sim = S.epoca + timedelta(seconds=S.tick * DT_CICLO)
     dados = snap.values
     novo = {
-        "timestamp": datetime.now(),
+        "timestamp": t_sim,
         "nivel_PA": planta.t_paralelo_a.percentual,
         "nivel_PB": planta.t_paralelo_b.percentual,
         "nivel_S1": planta.t_serie1.percentual,
@@ -86,15 +100,17 @@ def executar_ciclo():
 
         snap = None
         alerta = "Normal"
+        cont = 0
         for _ in range(st.session_state.get("ciclos_render", SUBSTEPS_PER_TICK)):
             for _ev in st.session_state.agente.stream(
                     st.session_state.estado_atual, st.session_state.config_agente):
                 pass
             snap = st.session_state.agente.get_state(st.session_state.config_agente)
+            cont += 1
             if snap.next:
                 alerta = "⚠️ Aprovação Humana Necessária!"
                 break
-        anexar_linha_historico(st.session_state.planta, snap)
+        anexar_linha_historico(st.session_state.planta, snap, n_ciclos=cont)
         return alerta
     except Exception as e:
         st.error(f"Erro: {e}")
@@ -114,7 +130,7 @@ def avancar_ticks(n):
             for _ev in S.agente.stream(S.estado_atual, S.config_agente):
                 pass
             snap = S.agente.get_state(S.config_agente)
-            anexar_linha_historico(S.planta, snap)
+            anexar_linha_historico(S.planta, snap, n_ciclos=1)
     except Exception as e:
         st.error(f"Erro ao avançar: {e}")
 
