@@ -48,6 +48,35 @@ if "agente" not in st.session_state:
     ])
 
 
+def anexar_linha_historico(planta, snap):
+    """Anexa uma linha (fotografia do tick) ao historico do dashboard."""
+    dados = snap.values
+    novo = {
+        "timestamp": datetime.now(),
+        "nivel_PA": planta.t_paralelo_a.percentual,
+        "nivel_PB": planta.t_paralelo_b.percentual,
+        "nivel_S1": planta.t_serie1.percentual,
+        "nivel_S2": planta.t_serie2.percentual,
+        "abertura_PA": planta.t_paralelo_a.abertura_valvula * 100,
+        "abertura_PB": planta.t_paralelo_b.abertura_valvula * 100,
+        "makeup_PA": planta.t_paralelo_a.abertura_makeup * 100,
+        "makeup_PB": planta.t_paralelo_b.abertura_makeup * 100,
+        "tc_saida": dados.get("tc_saida_decantadores", 0),
+        "soda_perdida_pa": (dados.get("soda_perdida", {}) or {}).get("PA", 0),
+        "soda_perdida_pb": (dados.get("soda_perdida", {}) or {}).get("PB", 0),
+        "chuva_mm_h": dados.get("chuva_atual_mm_h", 0),
+        "vazao_diluicao": planta.vazao_diluicao_tc,
+        "teor_sio2": dados.get("teor_sio2_atual", 5.0),
+        "alerta_agente": "Normal",
+    }
+    novo_df = pd.DataFrame([novo])
+    if st.session_state.historico.empty:
+        st.session_state.historico = novo_df
+    else:
+        st.session_state.historico = pd.concat(
+            [st.session_state.historico, novo_df], ignore_index=True).tail(200)
+
+
 def executar_ciclo():
     try:
         # Seguranca: se ja ha HITL pendente, NAO re-stream (evita burlar a aprovacao)
@@ -65,37 +94,29 @@ def executar_ciclo():
             if snap.next:
                 alerta = "⚠️ Aprovação Humana Necessária!"
                 break
-        dados = snap.values
-
-        planta = st.session_state.planta
-        novo = {
-            "timestamp": datetime.now(),
-            "nivel_PA": planta.t_paralelo_a.percentual,
-            "nivel_PB": planta.t_paralelo_b.percentual,
-            "nivel_S1": planta.t_serie1.percentual,
-            "nivel_S2": planta.t_serie2.percentual,
-            "abertura_PA": planta.t_paralelo_a.abertura_valvula * 100,
-            "abertura_PB": planta.t_paralelo_b.abertura_valvula * 100,
-            "makeup_PA": planta.t_paralelo_a.abertura_makeup * 100,
-            "makeup_PB": planta.t_paralelo_b.abertura_makeup * 100,
-            "tc_saida": dados.get("tc_saida_decantadores", 0),
-            "soda_perdida_pa": (dados.get("soda_perdida", {}) or {}).get("PA", 0),
-            "soda_perdida_pb": (dados.get("soda_perdida", {}) or {}).get("PB", 0),
-            "chuva_mm_h": dados.get("chuva_atual_mm_h", 0),
-            "vazao_diluicao": planta.vazao_diluicao_tc,
-            "teor_sio2": dados.get("teor_sio2_atual", 5.0),
-            "alerta_agente": alerta,
-        }
-        novo_df = pd.DataFrame([novo])
-        if st.session_state.historico.empty:
-            st.session_state.historico = novo_df
-        else:
-            st.session_state.historico = pd.concat(
-                [st.session_state.historico, novo_df], ignore_index=True).tail(200)
+        anexar_linha_historico(st.session_state.planta, snap)
         return alerta
     except Exception as e:
         st.error(f"Erro: {e}")
         return "Erro"
+
+
+def avancar_ticks(n):
+    """Avança EXATAMENTE n ciclos (passo manual), capturando cada tick no historico."""
+    S = st.session_state
+    try:
+        for _ in range(n):
+            # bloqueia se houver HITL pendente (nao burla a aprovacao humana)
+            snap0 = S.agente.get_state(S.config_agente)
+            if snap0 and snap0.next:
+                S.executando = False
+                break
+            for _ev in S.agente.stream(S.estado_atual, S.config_agente):
+                pass
+            snap = S.agente.get_state(S.config_agente)
+            anexar_linha_historico(S.planta, snap)
+    except Exception as e:
+        st.error(f"Erro ao avançar: {e}")
 
 
 # ------------------------------ SIDEBAR ------------------------------
@@ -104,6 +125,17 @@ if st.sidebar.button("▶️ Iniciar"):
     st.session_state.executando = True
 if st.sidebar.button("⏹️ Parar"):
     st.session_state.executando = False
+
+st.sidebar.markdown("**🔢 Passo manual (tick)**")
+if st.sidebar.button("⏪ 1 tick"):
+    avancar_ticks(1)
+    st.rerun()
+if st.sidebar.button("⏩ 10 ticks"):
+    avancar_ticks(10)
+    st.rerun()
+if st.sidebar.button("⏭️ 100 ticks"):
+    avancar_ticks(100)
+    st.rerun()
 ciclos_render = st.sidebar.slider("Ciclos por atualização (movimento)", 5, 40, 14)
 st.session_state.ciclos_render = ciclos_render
 
