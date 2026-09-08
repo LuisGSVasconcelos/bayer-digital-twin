@@ -133,8 +133,8 @@ if st.sidebar.button("⏪ 1 tick"):
 if st.sidebar.button("⏩ 10 ticks"):
     avancar_ticks(10)
     st.rerun()
-if st.sidebar.button("⏭️ 100 ticks"):
-    avancar_ticks(100)
+if st.sidebar.button("⏭️ 30 ticks"):
+    avancar_ticks(30)
     st.rerun()
 ciclos_render = st.sidebar.slider("Ciclos por atualização (movimento)", 5, 40, 14)
 st.session_state.ciclos_render = ciclos_render
