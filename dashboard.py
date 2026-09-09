@@ -386,13 +386,22 @@ def ao_vivo():
         st.plotly_chart(fig2, width="stretch", config={"displayModeBar": False})
 
         fig3 = go.Figure()
-        fig3.add_trace(go.Scatter(x=df["timestamp"], y=df["vazao_alimentacao"],
-                                  name="Alimentação (L/s)", line=dict(color="cyan")))
+        # Coercao explicita de dtype: sessoes persistidas podem trazer timestamp como
+        # string ISO (object) -> Plotly desordena/mistura e a linha sai plana.
+        _xt = pd.to_datetime(df["timestamp"], errors="coerce")
+        _vz = pd.to_numeric(df["vazao_alimentacao"], errors="coerce")
+        fig3.add_trace(go.Scatter(x=_xt, y=_vz,
+                                  name="Alimentação (L/s)",
+                                  line=dict(color="cyan", shape="linear"),
+                                  mode="lines+markers", marker=dict(size=4)))
         _vz = df["vazao_alimentacao"]
         fig3.update_layout(title=f"Vazão de Alimentação (janela: {_vz.min():.1f}–{_vz.max():.1f} L/s)",
-                           height=180, hovermode="x unified",
+                           height=260, hovermode="x unified",
                            yaxis_title="Vazão (L/s)", xaxis_title="Tempo (ciclo)")
-        fig3.update_yaxes(range=[10, 35])  # escala fixa: nunca "esmagada" quando constante
+        # Janela justa ao sinal (~22±8): amplitude aparente ~2x maior que em [10,35].
+        _lo = max(0.0, _vz.min() - 3)
+        _hi = _vz.max() + 3
+        fig3.update_yaxes(range=[_lo, _hi])
         st.plotly_chart(fig3, width="stretch", config={"displayModeBar": False})
         _alim_on = (planta_bayer.gerador.ativo and
                     planta_bayer.gerador.config.get("disturbios_habilitados", {})
