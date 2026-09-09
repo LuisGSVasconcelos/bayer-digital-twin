@@ -171,6 +171,9 @@ No painel:
 - o **tempo é fictício e independente do relógio do computador**: cada ciclo de processo conta 1 s
   a partir de uma época fixa (2024-01-01 00:00), então o eixo do tempo avança de forma
   reprodutível em ambos os modos (contínuo e manual);
+- os gráficos mostram **nível/abertura (PA e PB)**, **química e distúrbios** (TC, perda de
+  soda, chuva) e a **vazão de alimentação** (L/s, com a oscilação do distúrbio "Variação de
+  alimentação");
 - ajuste o **movimento** (ciclos por atualização) — a página usa **renderização por fragmento**,
   atualizando só os gráficos/status a cada ~0,4 s sem piscar a página inteira;
 - no seletor **Cenário de clima**, force chuva fixa (**Forte/Moderada/Nenhuma**), ajuste a

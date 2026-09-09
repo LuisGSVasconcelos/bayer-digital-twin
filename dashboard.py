@@ -51,7 +51,7 @@ if "agente" not in st.session_state:
     st.session_state.historico = pd.DataFrame(columns=[
         "timestamp", "nivel_PA", "nivel_PB", "nivel_S1", "nivel_S2",
         "abertura_PA", "abertura_PB", "makeup_PA", "makeup_PB", "tc_saida", "soda_perdida_pa", "soda_perdida_pb",
-        "chuva_mm_h", "vazao_diluicao", "teor_sio2", "alerta_agente",
+        "chuva_mm_h", "vazao_diluicao", "vazao_alimentacao", "teor_sio2", "alerta_agente",
     ])
 
 
@@ -80,6 +80,7 @@ def anexar_linha_historico(planta, snap, n_ciclos=1):
         "soda_perdida_pb": (dados.get("soda_perdida", {}) or {}).get("PB", 0),
         "chuva_mm_h": dados.get("chuva_atual_mm_h", 0),
         "vazao_diluicao": planta.vazao_diluicao_tc,
+        "vazao_alimentacao": round(22.0 + planta.disturbio_alimentacao_adicional, 2),
         "teor_sio2": dados.get("teor_sio2_atual", 5.0),
         "alerta_agente": "Normal",
     }
@@ -369,6 +370,12 @@ def ao_vivo():
                               marker_color="blue", opacity=0.3), secondary_y=True)
         fig2.update_layout(title="Química e Distúrbios", height=300)
         st.plotly_chart(fig2, width="stretch", config={"displayModeBar": False})
+
+        fig3 = go.Figure()
+        fig3.add_trace(go.Scatter(x=df["timestamp"], y=df["vazao_alimentacao"],
+                                  name="Alimentação (L/s)", line=dict(color="cyan")))
+        fig3.update_layout(title="Vazão de Alimentação", height=180, hovermode="x unified")
+        st.plotly_chart(fig3, width="stretch", config={"displayModeBar": False})
 
         with st.expander("📋 Log de Eventos"):
             st.dataframe(df.tail(10)[["timestamp", "alerta_agente", "nivel_PA", "tc_saida"]])
