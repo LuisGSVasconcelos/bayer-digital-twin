@@ -387,7 +387,17 @@ def ao_vivo():
                                   name="Alimentação (L/s)", line=dict(color="cyan")))
         fig3.update_layout(title="Vazão de Alimentação", height=180, hovermode="x unified",
                            yaxis_title="Vazão (L/s)", xaxis_title="Tempo (ciclo)")
+        fig3.update_yaxes(range=[10, 35])  # escala fixa: nunca "esmagada" quando constante
         st.plotly_chart(fig3, width="stretch", config={"displayModeBar": False})
+        _alim_on = (planta_bayer.gerador.ativo and
+                    planta_bayer.gerador.config.get("disturbios_habilitados", {})
+                    .get("alimentacao", True))
+        if _alim_on:
+            st.caption("⛽ Distúrbio de alimentação ATIVO — a vazão oscila em torno de 22 L/s.")
+        else:
+            st.warning("⛽ O distúrbio **\"Variação de alimentação\"** está DESLIGADO em "
+                       "🌩️ Distúrbios — por isso a vazão fica **constante em 22 L/s** "
+                       "(correto fisicamente). Marque-o para vê-la oscilar.")
 
         with st.expander("📋 Log de Eventos"):
             st.dataframe(df.tail(10)[["timestamp", "alerta_agente", "nivel_PA", "tc_saida"]])
