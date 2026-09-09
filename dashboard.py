@@ -401,6 +401,19 @@ def ao_vivo():
 
         with st.expander("📋 Log de Eventos"):
             st.dataframe(df.tail(10)[["timestamp", "alerta_agente", "nivel_PA", "tc_saida"]])
+
+        with st.expander("🔬 Diagnóstico da vazão (últimos valores)"):
+            g_ = planta_bayer.gerador
+            st.write("gerador.ativo:", g_.ativo,
+                     "| só-química:", bool(g_.config.get("only_chemistry")),
+                     "| tempo_simulacao:", g_.tempo_simulacao)
+            st.write("habilitados:", g_.config.get("disturbios_habilitados"),
+                      "| config alimentação:", g_.config.get("variacao_alimentacao"))
+            st.write("vazão INSTANTÂNEA (planta.vazao_alimentacao):",
+                     round(planta_bayer.vazao_alimentacao, 2),
+                     "| distúrbio adicional atual:",
+                     round(planta_bayer.disturbio_alimentacao_adicional, 2))
+            st.dataframe(df.tail(12)[["timestamp", "vazao_alimentacao", "nivel_PA"]])
     else:
         st.warning("Aguardando dados. Clique em Iniciar.")
 
