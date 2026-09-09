@@ -277,12 +277,15 @@ manual_val = st.sidebar.checkbox(
     "Atuação manual da válvula", value=False, key="manual_valvula",
     help="Define a abertura da válvula de drenagem manualmente, sobrepondo o controle PI/fuzzy.")
 if not manual_val:
+    # OFF: sliders seguem a posicao REAL da valvula (setado via session_state,
+    # SEM passar default ao widget — padrao correto, evita o warning do Streamlit)
     st.session_state["abertura_pa"] = int(round(planta_bayer.t_paralelo_a.abertura_valvula * 100))
     st.session_state["abertura_pb"] = int(round(planta_bayer.t_paralelo_b.abertura_valvula * 100))
-_pa = int(st.session_state.get("abertura_pa", 0))
-_pb = int(st.session_state.get("abertura_pb", 0))
-v_pa = st.sidebar.slider("Abertura PA (%)", 0, 100, _pa, 5, key="abertura_pa")
-v_pb = st.sidebar.slider("Abertura PB (%)", 0, 100, _pb, 5, key="abertura_pb")
+else:
+    st.session_state.setdefault("abertura_pa", 0)
+    st.session_state.setdefault("abertura_pb", 0)
+v_pa = st.sidebar.slider("Abertura PA (%)", 0, 100, step=5, key="abertura_pa")
+v_pb = st.sidebar.slider("Abertura PB (%)", 0, 100, step=5, key="abertura_pb")
 if manual_val:
     lga.FORCA_ABERTURA = {"PA": v_pa / 100.0, "PB": v_pb / 100.0}
     st.sidebar.caption("Controle automático sobreposto. Desligue p/ voltar ao automático.")
