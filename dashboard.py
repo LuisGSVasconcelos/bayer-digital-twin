@@ -265,10 +265,14 @@ st.sidebar.caption(f"Simulação acelerada: {SUBSTEPS_PER_TICK} ciclos/tick")
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🕹️ Válvula de saída (manual)")
+# Sliders SEMPRE visiveis e habilitados. Quando manual esta OFF, refletem a posicao
+# REAL (automatica) da valvula — gravados no session_state ANTES de o widget nascer.
 manual_val = st.sidebar.checkbox(
     "Atuação manual da válvula", value=False, key="manual_valvula",
     help="Define a abertura da válvula de drenagem manualmente, sobrepondo o controle PI/fuzzy.")
-# Sliders SEMPRE visiveis e habilitados -> o valor so e usado quando manual esta ON.
+if not manual_val:
+    st.session_state["abertura_pa"] = int(round(planta_bayer.t_paralelo_a.abertura_valvula * 100))
+    st.session_state["abertura_pb"] = int(round(planta_bayer.t_paralelo_b.abertura_valvula * 100))
 _pa = int(st.session_state.get("abertura_pa", 0))
 _pb = int(st.session_state.get("abertura_pb", 0))
 v_pa = st.sidebar.slider("Abertura PA (%)", 0, 100, _pa, 5, key="abertura_pa")
