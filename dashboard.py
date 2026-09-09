@@ -344,13 +344,14 @@ def ao_vivo():
 
     if not df.empty:
         ultimo = df.iloc[-1]
-        c1, c2, c3, c4 = st.columns(4)
+        c1, c2, c3, c4, c5 = st.columns(5)
         c1.metric("📊 Nível PA", f"{ultimo['nivel_PA']:.2f}%",
                   "Crítico!" if ultimo["nivel_PA"] > 80 else "OK")
         c2.metric("📊 Nível PB", f"{ultimo['nivel_PB']:.2f}%")
         c3.metric("🧪 TC Saída", f"{ultimo['tc_saida']:.1f} g/L")
         c4.metric("💧 Perda Soda",
                   f"{ultimo['soda_perdida_pa'] + ultimo['soda_perdida_pb']:.2f} kg/s")
+        c5.metric("⛽ Alimentação", f"{ultimo['vazao_alimentacao']:.1f} L/s")
 
         fig1 = make_subplots(specs=[[{"secondary_y": True}]])
         fig1.add_trace(go.Scatter(x=df["timestamp"], y=df["nivel_PA"], name="Nível PA", line=dict(color="red")))
@@ -384,7 +385,8 @@ def ao_vivo():
         fig3 = go.Figure()
         fig3.add_trace(go.Scatter(x=df["timestamp"], y=df["vazao_alimentacao"],
                                   name="Alimentação (L/s)", line=dict(color="cyan")))
-        fig3.update_layout(title="Vazão de Alimentação", height=180, hovermode="x unified")
+        fig3.update_layout(title="Vazão de Alimentação", height=180, hovermode="x unified",
+                           yaxis_title="Vazão (L/s)", xaxis_title="Tempo (ciclo)")
         st.plotly_chart(fig3, width="stretch", config={"displayModeBar": False})
 
         with st.expander("📋 Log de Eventos"):
