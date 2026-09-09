@@ -22,6 +22,15 @@ st.set_page_config(page_title="Bayer Process Control Room", page_icon="🏭", la
 SETPOINT = 65.0
 SUBSTEPS_PER_TICK = 10  # A) varios ciclos fisicos por tick (relogio acelerado, leve)
 
+# Colunas canonicas do historico. Usado para reindexar e garantir que sessao antiga
+# (sem as colunas mais recentes, ex.: vazao_alimentacao) nao quebre os graficos.
+COLS_HIST = [
+    "timestamp", "nivel_PA", "nivel_PB", "nivel_S1", "nivel_S2",
+    "abertura_PA", "abertura_PB", "makeup_PA", "makeup_PB", "tc_saida",
+    "soda_perdida_pa", "soda_perdida_pb", "chuva_mm_h", "vazao_diluicao",
+    "vazao_alimentacao", "teor_sio2", "alerta_agente",
+]
+
 # Relogio FICTICIO e independente do computador: cada ciclo de processo conta como
 # DT_CICLO segundos a partir de uma epoca fixa. Usado em modo continuo e manual (ticks).
 DT_CICLO = 1.0           # s de processo por ciclo (vazoes em L/s => 1 ciclo ~ 1 s)
@@ -48,11 +57,7 @@ if "agente" not in st.session_state:
     st.session_state.executando = False
     st.session_state.tick = 0  # total de ciclos de processo (relogio ficticio)
     st.session_state.epoca = EPOCH_SIM
-    st.session_state.historico = pd.DataFrame(columns=[
-        "timestamp", "nivel_PA", "nivel_PB", "nivel_S1", "nivel_S2",
-        "abertura_PA", "abertura_PB", "makeup_PA", "makeup_PB", "tc_saida", "soda_perdida_pa", "soda_perdida_pb",
-        "chuva_mm_h", "vazao_diluicao", "vazao_alimentacao", "teor_sio2", "alerta_agente",
-    ])
+    st.session_state.historico = pd.DataFrame(columns=COLS_HIST)
 
 
 def anexar_linha_historico(planta, snap, n_ciclos=1):
@@ -309,7 +314,7 @@ def ao_vivo():
         if "Humana" in alerta_ultimo:
             S.executando = False  # pausa e espera aprovacao (banner abaixo)
 
-    df = S.historico
+    df = S.historico.reindex(columns=COLS_HIST, fill_value=0)
     snap = S.agente.get_state(S.config_agente)
     hitl_pendente = bool(snap and snap.next)
 
