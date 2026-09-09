@@ -285,6 +285,7 @@ class PlantaBayerSimulada:
         self.gerador = GeradorDisturbios(ativo=ativar_disturbios)
         self.disturbio_alimentacao_adicional = 0.0
         self.vazao_diluicao_tc = 0.0
+        self.vazao_alimentacao = 22.0
 
     def rodar_ciclo_fisica(self, intensidade_chuva):
         fator_divisao, teor_sio2 = self.gerador.aplicar_disturbios(self)
@@ -297,6 +298,7 @@ class PlantaBayerSimulada:
 
         carga_base = 22.0
         carga_inicial = max(5.0, carga_base + self.disturbio_alimentacao_adicional)
+        self.vazao_alimentacao = carga_inicial  # guarda p/ leitura (nao e zerada no fim)
 
         saida_s1 = self.t_serie1.atualizar_volume(carga_inicial, 0)
         entrada_s2 = saida_s1 + self.vazao_diluicao_tc

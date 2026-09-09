@@ -80,7 +80,7 @@ def anexar_linha_historico(planta, snap, n_ciclos=1):
         "soda_perdida_pb": (dados.get("soda_perdida", {}) or {}).get("PB", 0),
         "chuva_mm_h": dados.get("chuva_atual_mm_h", 0),
         "vazao_diluicao": planta.vazao_diluicao_tc,
-        "vazao_alimentacao": round(22.0 + planta.disturbio_alimentacao_adicional, 2),
+        "vazao_alimentacao": round(planta.vazao_alimentacao, 2),
         "teor_sio2": dados.get("teor_sio2_atual", 5.0),
         "alerta_agente": "Normal",
     }
