@@ -314,7 +314,12 @@ def ao_vivo():
         if "Humana" in alerta_ultimo:
             S.executando = False  # pausa e espera aprovacao (banner abaixo)
 
-    df = S.historico.reindex(columns=COLS_HIST, fill_value=0)
+    df = S.historico
+    # Sessao antiga (sem a coluna vazao_alimentacao): zera o historico p/ recomecar
+    # com dados reais, em vez de deixar linhas antigas com vazao=0 (grafico 'morto').
+    if not set(COLS_HIST).issubset(set(df.columns)):
+        S.historico = pd.DataFrame(columns=COLS_HIST)
+        df = S.historico
     snap = S.agente.get_state(S.config_agente)
     hitl_pendente = bool(snap and snap.next)
 
