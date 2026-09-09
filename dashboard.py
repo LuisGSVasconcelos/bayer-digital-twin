@@ -385,7 +385,9 @@ def ao_vivo():
         fig3 = go.Figure()
         fig3.add_trace(go.Scatter(x=df["timestamp"], y=df["vazao_alimentacao"],
                                   name="Alimentação (L/s)", line=dict(color="cyan")))
-        fig3.update_layout(title="Vazão de Alimentação", height=180, hovermode="x unified",
+        _vz = df["vazao_alimentacao"]
+        fig3.update_layout(title=f"Vazão de Alimentação (janela: {_vz.min():.1f}–{_vz.max():.1f} L/s)",
+                           height=180, hovermode="x unified",
                            yaxis_title="Vazão (L/s)", xaxis_title="Tempo (ciclo)")
         fig3.update_yaxes(range=[10, 35])  # escala fixa: nunca "esmagada" quando constante
         st.plotly_chart(fig3, width="stretch", config={"displayModeBar": False})
